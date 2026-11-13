@@ -1,101 +1,48 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#081426">
-<title>S.I.B.I.L.L.A. V3 | Nowcasting Italia</title>
+<title>S.I.B.I.L.L.A. | Nowcasting Italia</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;
-background:#081426;color:#fff;font-family:Arial,sans-serif}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#081426;color:#fff;font-family:Arial,sans-serif}
 #map{position:absolute;inset:0;background:#d5dce2}
-.leaflet-container{background:#d5dce2}
-.leaflet-control-attribution{font-size:9px!important}
-header{position:absolute;z-index:1000;top:8px;left:50%;
-transform:translateX(-50%);width:min(96%,650px);
-pointer-events:none}
-.brand{text-align:center;font-size:clamp(23px,4vw,32px);
-font-weight:900;letter-spacing:3px;
-background:linear-gradient(90deg,#00eaff,#347bff,#b34aff,
-#ff4bd8,#00eaff);background-size:300% 100%;
--webkit-background-clip:text;background-clip:text;
-color:transparent;animation:smoke 8s linear infinite;
-filter:drop-shadow(0 1px 3px #071425)}
+header{position:absolute;z-index:1000;top:8px;left:50%;transform:translateX(-50%);width:min(96%,650px);pointer-events:none}
+.brand{text-align:center;font-size:clamp(23px,4vw,32px);font-weight:900;letter-spacing:3px;background:linear-gradient(90deg,#00eaff,#347bff,#b34aff,#ff4bd8,#00eaff);background-size:300% 100%;background-clip:text;-webkit-background-clip:text;color:transparent;animation:smoke 8s linear infinite;filter:drop-shadow(0 1px 3px #071425)}
 @keyframes smoke{to{background-position:300% 0}}
-.subtitle{text-align:center;font-size:10px;
-letter-spacing:1.5px;color:#fff;
-text-shadow:0 1px 5px #000;margin-top:4px}
-.tabs{display:flex;gap:5px;margin-top:12px;padding:5px;
-background:#08182eef;border:1px solid #ffffff77;
-border-radius:13px;pointer-events:auto;
-box-shadow:0 3px 20px #0006}
-.tabs button{flex:1;padding:12px 3px;border:0;
-border-radius:9px;background:transparent;color:#c1d3e7;
-font-weight:bold;font-size:13px;cursor:pointer}
-.tabs button.active{background:linear-gradient(110deg,
-#086fd5,#852bd1);color:white;
-box-shadow:0 0 13px #605bff88}
-.legend{position:absolute;z-index:900;top:150px;right:12px;
-width:268px;max-height:calc(100% - 195px);
-overflow:auto;background:#061326f5;
-border:1px solid #ffffffa0;border-radius:19px;
-padding:17px;box-shadow:0 8px 28px #0008}
+.subtitle{text-align:center;font-size:10px;letter-spacing:1.5px;text-shadow:0 1px 5px #000}
+.tabs{display:flex;gap:5px;margin-top:12px;padding:5px;background:#08182eef;border:1px solid #ffffff77;border-radius:13px;pointer-events:auto}
+.tabs button{flex:1;padding:12px 3px;border:0;border-radius:9px;background:transparent;color:#c1d3e7;font-weight:bold;font-size:13px}
+.tabs button.active{background:linear-gradient(110deg,#086fd5,#852bd1);color:white;box-shadow:0 0 13px #605bff88}
+.legend{position:absolute;z-index:900;top:150px;right:12px;width:268px;max-height:calc(100% - 195px);overflow:auto;background:#061326f5;border:1px solid #ffffffa0;border-radius:19px;padding:17px;box-shadow:0 8px 28px #0008}
 .legend h2{margin:0 0 12px;font-size:20px}
-.item{display:flex;gap:12px;align-items:center;
-border-top:1px solid #ffffff25;padding:10px 0}
-.letter{width:54px;min-width:54px;height:54px;
-display:grid;place-items:center;border:2px solid;
-border-radius:12px;font-size:28px;font-weight:800;
-box-shadow:inset 0 0 14px currentColor,
-0 0 9px currentColor}
+.item{display:flex;gap:12px;align-items:center;border-top:1px solid #ffffff25;padding:10px 0}
+.letter{width:54px;min-width:54px;height:54px;display:grid;place-items:center;border:2px solid;border-radius:12px;font-size:28px;font-weight:800}
 .a{color:#e23fff;background:#a41ad333}
 .b{color:#388dff;background:#2867e933}
 .c{color:#00edfa;background:#00adbd33}
 .d{color:#9daabc;background:#8491a033}
 .item strong{font-size:13px;display:block}
-.item small{font-size:11px;color:#c6d5e7;
-line-height:1.5;display:block;margin-top:4px}
-.note{border-top:1px solid #ffffff55;padding-top:12px;
-font-size:11px;line-height:1.6;color:#c2d3e8}
+.item small{font-size:11px;color:#c6d5e7;line-height:1.5;display:block;margin-top:4px}
+.note{border-top:1px solid #ffffff55;padding-top:12px;font-size:11px;line-height:1.6;color:#c2d3e8}
 .toggle{display:none}
-.demo{position:absolute;z-index:850;bottom:26px;left:50%;
-transform:translateX(-50%);padding:8px 12px;
-background:#07172ae9;border:1px solid #8ba0b9;
-border-radius:9px;font-size:10px;text-align:center;
-pointer-events:none;max-width:80%}
-.sib-label{font-weight:900;font-size:22px;color:white;
-text-shadow:0 0 7px #000,0 0 12px #000;
-text-align:center}
-.leaflet-popup-content-wrapper{background:#08172b;
-color:white;border:1px solid #7392b5;border-radius:12px}
+.status{position:absolute;z-index:850;bottom:26px;left:50%;transform:translateX(-50%);padding:8px 12px;background:#07172ae9;border:1px solid #8ba0b9;border-radius:9px;font-size:10px;text-align:center;pointer-events:none;max-width:85%}
+.sib-label{font-weight:900;font-size:23px;color:white;text-shadow:0 0 7px #000,0 0 12px #000;text-align:center}
+.leaflet-popup-content-wrapper{background:#08172b;color:white;border:1px solid #7392b5}
 .leaflet-popup-tip{background:#08172b}
 .leaflet-popup-close-button{color:white!important}
-.sib-core{stroke-linejoin:round;stroke-linecap:round}
-.sib-wave{pointer-events:none;stroke-linejoin:round;
-stroke-linecap:round;vector-effect:non-scaling-stroke}
 @media(max-width:650px){
-header{top:8px}.brand{font-size:23px}
-.subtitle{font-size:9px}.tabs{margin-top:8px}
-.legend{top:auto;bottom:54px;right:8px;
-width:min(270px,76vw);max-height:55vh;
-padding:12px;border-radius:14px}
-.legend h2{font-size:17px}.item{padding:7px 0}
-.letter{width:43px;min-width:43px;height:43px;
-font-size:22px}
-.toggle{display:block;position:absolute;z-index:1000;
-right:8px;bottom:12px;padding:10px 14px;
-background:#08182e;color:white;
-border:1px solid #9db4ce;border-radius:10px}
+.brand{font-size:23px}.subtitle{font-size:9px}
+.tabs{margin-top:8px}
+.legend{top:auto;bottom:54px;right:8px;width:min(270px,76vw);max-height:55vh;padding:12px}
 .legend.closed{display:none}
-.demo{left:8px;bottom:10px;transform:none;
-max-width:63%;font-size:9px}
+.toggle{display:block;position:absolute;z-index:1000;right:8px;bottom:12px;padding:10px 14px;background:#08182e;color:white;border:1px solid #9db4ce;border-radius:10px}
+.status{left:8px;bottom:10px;transform:none;max-width:63%;font-size:9px}
 }
-@media(prefers-reduced-motion:reduce){
-.brand{animation:none}
-}
+@media(prefers-reduced-motion:reduce){.brand{animation:none}}
 </style>
 </head>
 <body>
@@ -103,289 +50,243 @@ max-width:63%;font-size:9px}
 <header>
 <div class="brand">S.I.B.I.L.L.A.</div>
 <div class="subtitle">INDICE DI PROBABILITÀ CONVETTIVA</div>
-<nav class="tabs" aria-label="Orizzonte previsionale">
+<nav class="tabs">
 <button class="active" data-h="3">3 ORE</button>
 <button data-h="24">24 ORE</button>
 <button data-h="48">48 ORE</button>
 <button data-h="72">72 ORE</button>
 </nav>
 </header>
-<aside class="legend" id="legend">
-<h2>Legenda<br>Potenziale convettivo</h2>
-<div class="item"><span class="letter a">A</span>
-<div><strong>Potenziale elevato</strong>
-<small>Condizioni molto favorevoli alla convezione intensa</small>
-</div></div>
-<div class="item"><span class="letter b">B</span>
-<div><strong>Potenziale moderato</strong>
-<small>Condizioni favorevoli alla convezione organizzata</small>
-</div></div>
-<div class="item"><span class="letter c">C</span>
-<div><strong>Potenziale basso</strong>
-<small>Convezione possibile, generalmente meno organizzata</small>
-</div></div>
-<div class="item"><span class="letter d">D</span>
-<div><strong>Potenziale non significativo</strong>
-<small>Segnale convettivo debole o assente</small>
-</div></div>
-<div class="note">
-I poligoni previsionali emettono onde luminose.
-Le osservazioni rimangono fisse.
-La pulsazione è un effetto grafico.
-<br><br>
-Indice sperimentale basato su NOAA GFS.
-Classi non ancora calibrate con osservazioni radar.
-</div>
+<aside class="legend closed" id="legend">
+<h2>Potenziale convettivo</h2>
+<div class="item"><span class="letter a">A</span><div><strong>Elevato</strong><small>Condizioni molto favorevoli alla convezione intensa</small></div></div>
+<div class="item"><span class="letter b">B</span><div><strong>Moderato</strong><small>Condizioni favorevoli alla convezione organizzata</small></div></div>
+<div class="item"><span class="letter c">C</span><div><strong>Basso</strong><small>Convezione possibile, generalmente meno organizzata</small></div></div>
+<div class="item"><span class="letter d">D</span><div><strong>Non significativo</strong><small>Segnale convettivo debole o assente</small></div></div>
+<div class="note">Dati NOAA GFS. Indice sperimentale non calibrato. Le aree sono aggregate sulla griglia originale: i confini non rappresentano osservazioni puntuali.</div>
 </aside>
 <button class="toggle" id="toggle">Legenda</button>
-<div class="demo" id="status">CARICAMENTO DATI GFS...</div>
+<div class="status" id="status">CARICAMENTO GFS...</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (()=>{
 "use strict";
-
-const map=L.map("map",{
- center:[42.2,12.5],zoom:5,minZoom:3,maxZoom:12,
- preferCanvas:false,zoomControl:false
-});
+const map=L.map("map",{center:[42.2,12.5],zoom:5,minZoom:3,maxZoom:12,preferCanvas:false,zoomControl:false});
 L.control.zoom({position:"bottomleft"}).addTo(map);
-L.tileLayer(
- "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{
- maxZoom:17,
- attribution:"© OpenTopoMap · © OpenStreetMap"
-}).addTo(map);
-
-map.createPane("wavePane");
-map.getPane("wavePane").style.zIndex=410;
-map.createPane("forecastPane");
-map.getPane("forecastPane").style.zIndex=430;
-map.createPane("labelPane");
-map.getPane("labelPane").style.zIndex=450;
-
-const waves=L.layerGroup().addTo(map);
-const forecast=L.layerGroup().addTo(map);
-const labels=L.layerGroup().addTo(map);
-const palette={
- A:"#e23fff",B:"#388dff",
- C:"#00edfa",D:"#9daabc"
-};
+L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{maxZoom:17,attribution:"© OpenTopoMap · © OpenStreetMap"}).addTo(map);
+map.createPane("waves");map.getPane("waves").style.zIndex=410;
+map.createPane("areas");map.getPane("areas").style.zIndex=430;
+map.createPane("letters");map.getPane("letters").style.zIndex=450;
+const waveLayer=L.layerGroup().addTo(map);
+const areaLayer=L.layerGroup().addTo(map);
+const labelLayer=L.layerGroup().addTo(map);
+const colors={A:"#e23fff",B:"#388dff",C:"#00edfa",D:"#9daabc"};
 const status=document.getElementById("status");
-const reduceMotion=window.matchMedia(
- "(prefers-reduced-motion: reduce)"
-).matches;
+const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let horizon=3,requestId=0,animation=0,waveItems=[];
 
-let horizon=3;
-let requestNumber=0;
-let waveObjects=[];
-let animationId=0;
-let lastFrame=0;
-
-function expandedRing(coords,distance){
- const points=coords.map(p=>map.latLngToLayerPoint(p));
- const n=points.length;
- if(n<3)return coords;
- const center=points.reduce((a,p)=>{
-  a.x+=p.x;a.y+=p.y;return a;
- },{x:0,y:0});
- center.x/=n;center.y/=n;
+function key(x,y){return x+","+y}
+function connected(cells){
+ const remaining=new Map(cells.map(c=>[key(c.x,c.y),c]));
+ const groups=[];
+ while(remaining.size){
+  const first=remaining.values().next().value;
+  const queue=[first],group=[];
+  remaining.delete(key(first.x,first.y));
+  for(let i=0;i<queue.length;i++){
+   const c=queue[i];group.push(c);
+   for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    const k=key(c.x+dx,c.y+dy);
+    if(remaining.has(k)){
+     queue.push(remaining.get(k));remaining.delete(k);
+    }
+   }
+  }
+  groups.push(group);
+ }
+ return groups;
+}
+function edgesFor(group){
+ const edges=new Map();
+ function edge(a,b){
+  const id=key(...a)+"|"+key(...b);
+  const reverse=key(...b)+"|"+key(...a);
+  if(edges.has(reverse))edges.delete(reverse);
+  else edges.set(id,{a,b});
+ }
+ for(const {x,y} of group){
+  edge([x,y],[x+1,y]);
+  edge([x+1,y],[x+1,y+1]);
+  edge([x+1,y+1],[x,y+1]);
+  edge([x,y+1],[x,y]);
+ }
+ return edges;
+}
+function boundary(group){
+ const edges=edgesFor(group);
+ const starts=new Map();
+ for(const [id,e] of edges){
+  const k=key(...e.a);
+  if(!starts.has(k))starts.set(k,[]);
+  starts.get(k).push({id,...e});
+ }
+ const loops=[];
+ while(edges.size){
+  const first=edges.entries().next().value;
+  const start=first[1].a;
+  let current=first[1],loop=[start],steps=0;
+  while(current&&steps++<100000){
+   edges.delete(current.id);
+   loop.push(current.b);
+   if(key(...current.b)===key(...start))break;
+   const choices=(starts.get(key(...current.b))||[])
+    .filter(e=>edges.has(e.id));
+   current=choices[0]||null;
+  }
+  if(loop.length>=4&&key(...loop.at(-1))===key(...start)){
+   loops.push(loop.map(p=>[p[1],p[0]]));
+  }
+ }
+ return loops;
+}
+function signedArea(ring){
+ let s=0;
+ for(let i=0;i<ring.length-1;i++){
+  const a=ring[i],b=ring[i+1];
+  s+=a[1]*b[0]-b[1]*a[0];
+ }
+ return s/2;
+}
+function buildAreas(features){
+ const classes={A:[],B:[],C:[],D:[]};
+ for(const f of features){
+  if(f.geometry?.type!=="Polygon")continue;
+  const cls=f.properties?.class;
+  if(!classes[cls])continue;
+  const ring=f.geometry.coordinates?.[0];
+  if(!ring||ring.length!==5)continue;
+  const xs=ring.map(p=>p[0]),ys=ring.map(p=>p[1]);
+  if(!xs.every(Number.isFinite)||!ys.every(Number.isFinite))continue;
+  const x=Math.min(...xs),y=Math.min(...ys);
+  if(Math.abs(Math.max(...xs)-x-1)>0.001||
+     Math.abs(Math.max(...ys)-y-1)>0.001)continue;
+  classes[cls].push({x,y,p:f.properties});
+ }
+ const result=[];
+ for(const [cls,cells] of Object.entries(classes)){
+  for(const group of connected(cells)){
+   const rings=boundary(group);
+   if(!rings.length)continue;
+   rings.sort((a,b)=>Math.abs(signedArea(b))-Math.abs(signedArea(a)));
+   result.push({cls,group,rings});
+  }
+ }
+ return result;
+}
+function expand(ring,pixels){
+ const points=ring.slice(0,-1).map(p=>map.latLngToLayerPoint(p));
+ const c=points.reduce((s,p)=>({x:s.x+p.x,y:s.y+p.y}),{x:0,y:0});
+ c.x/=points.length;c.y/=points.length;
  return points.map(p=>{
-  const vx=p.x-center.x,vy=p.y-center.y;
-  const len=Math.hypot(vx,vy)||1;
-  return map.layerPointToLatLng([
-   p.x+vx/len*distance,
-   p.y+vy/len*distance
-  ]);
+  const dx=p.x-c.x,dy=p.y-c.y,d=Math.hypot(dx,dy)||1;
+  return map.layerPointToLatLng([p.x+dx/d*pixels,p.y+dy/d*pixels]);
  });
 }
-
-function clearMap(){
- cancelAnimationFrame(animationId);
- waves.clearLayers();
- forecast.clearLayers();
- labels.clearLayers();
- waveObjects=[];
- lastFrame=0;
-}
-
-function animate(time){
- if(time-lastFrame>=80){
-  lastFrame=time;
-  for(const obj of waveObjects){
-   const phase=((time/4200+obj.phase)%1);
-   const eased=1-Math.pow(1-phase,2);
-   obj.layer.setLatLngs(
-    expandedRing(obj.coords,4+eased*34)
-   );
-   obj.layer.setStyle({
-    opacity:Math.pow(1-phase,1.45)*.65,
-    weight:3+phase*5
-   });
-  }
- }
- animationId=requestAnimationFrame(animate);
-}
-
-function validFeature(f){
- if(!f||f.type!=="Feature"||!f.geometry)return false;
- if(f.geometry.type!=="Polygon")return false;
- const p=f.properties||{};
- if(!palette[p.class])return false;
- const ring=f.geometry.coordinates?.[0];
- return Array.isArray(ring)&&ring.length>=4&&
-  ring.every(c=>Array.isArray(c)&&c.length>=2&&
-   Number.isFinite(c[0])&&Number.isFinite(c[1]));
-}
-
-function drawFeature(f){
- const grade=f.properties.class;
- const color=palette[grade];
- const ring=f.geometry.coordinates[0];
- const coords=ring.slice(0,-1).map(p=>[p[1],p[0]]);
- if(coords.length<3)return;
-
- const polygon=L.polygon(coords,{
-  pane:"forecastPane",color,
-  weight:grade==="D"?2:3,
-  opacity:1,fillColor:color,
-  fillOpacity:grade==="D"?.12:.24,
-  className:"sib-core"
- }).addTo(forecast);
-
- const p=f.properties;
+function drawArea(area){
+ const color=colors[area.cls];
+ const polygon=L.polygon(area.rings,{
+  pane:"areas",color,weight:3,opacity:1,
+  fillColor:color,fillOpacity:area.cls==="D"?.10:.24,
+  lineJoin:"round"
+ }).addTo(areaLayer);
+ const n=area.group.length;
+ const avg=(name)=>area.group.reduce((s,c)=>s+(Number(c.p[name])||0),0)/n;
  polygon.bindPopup(
-  "<b>Indice convettivo sperimentale</b><br>"+
-  "Classe "+grade+"<br>"+
-  "CAPE: "+p.cape_j_kg+" J/kg<br>"+
-  "CIN: "+p.cin_j_kg+" J/kg<br>"+
-  "PWAT: "+p.pwat_kg_m2+" kg/m²<br>"+
-  "Classificazione non calibrata"
+  "<b>Potenziale convettivo "+area.cls+"</b><br>"+
+  n+" celle GFS aggregate<br>"+
+  "CAPE medio: "+Math.round(avg("cape_j_kg"))+" J/kg<br>"+
+  "CIN media: "+Math.round(avg("cin_j_kg"))+" J/kg<br>"+
+  "PWAT medio: "+avg("pwat_kg_m2").toFixed(1)+" kg/m²<br>"+
+  "Indice sperimentale non calibrato"
  );
-
- if(grade!=="D"){
-  L.polygon(coords,{
-   pane:"wavePane",color,weight:12,
-   opacity:.12,fill:false,interactive:false
-  }).addTo(waves);
-
-  if(!reduceMotion){
-   const wave=L.polygon(coords,{
-    pane:"wavePane",color,weight:3,
-    opacity:0,fill:false,interactive:false,
-    className:"sib-wave"
-   }).addTo(waves);
-   waveObjects.push({
-    layer:wave,coords,
-    phase:waveObjects.length%2*.5
-   });
+ const center=polygon.getBounds().getCenter();
+ L.marker(center,{pane:"letters",interactive:false,
+  icon:L.divIcon({className:"sib-label",html:area.cls,
+   iconSize:[30,30],iconAnchor:[15,15]})
+ }).addTo(labelLayer);
+ if(area.cls!=="D"){
+  L.polygon(area.rings,{pane:"waves",color,weight:10,
+   opacity:.10,fill:false,interactive:false}).addTo(waveLayer);
+  if(!reduced){
+   const wave=L.polygon(area.rings[0],{
+    pane:"waves",color,weight:3,opacity:0,
+    fill:false,interactive:false
+   }).addTo(waveLayer);
+   waveItems.push({wave,ring:area.rings[0],phase:waveItems.length%2*.5});
   }
  }
-
- const center=polygon.getBounds().getCenter();
- L.marker(center,{
-  pane:"labelPane",interactive:false,
-  icon:L.divIcon({
-   className:"sib-label",html:grade,
-   iconSize:[30,30],iconAnchor:[15,15]
-  })
- }).addTo(labels);
 }
-
-function formatTime(value){
- const date=new Date(value);
- if(!Number.isFinite(date.getTime()))return "non disponibile";
- return date.toLocaleString("it-IT",{
-  timeZone:"Europe/Rome",
-  day:"2-digit",month:"2-digit",
+function animate(t){
+ for(const item of waveItems){
+  const p=(t/4200+item.phase)%1;
+  item.wave.setLatLngs(expand(item.ring,4+34*p));
+  item.wave.setStyle({opacity:.65*Math.pow(1-p,1.5),weight:3+5*p});
+ }
+ animation=requestAnimationFrame(animate);
+}
+function clear(){
+ cancelAnimationFrame(animation);
+ waveLayer.clearLayers();areaLayer.clearLayers();labelLayer.clearLayers();
+ waveItems=[];
+}
+function localTime(s){
+ return new Date(s).toLocaleString("it-IT",{
+  timeZone:"Europe/Rome",day:"2-digit",month:"2-digit",
   hour:"2-digit",minute:"2-digit"
  });
 }
-
-async function loadForecast(){
- const current=++requestNumber;
- const selected=horizon;
- clearMap();
- status.textContent="CARICAMENTO GFS · +"+selected+" ORE";
-
+async function load(){
+ const id=++requestId,h=horizon;
+ clear();
+ status.textContent="CARICAMENTO GFS +"+h+" ORE";
  try{
-  const response=await fetch(
-   "data/forecast/"+selected+"h.geojson?t="+Date.now(),
-   {cache:"no-store"}
-  );
+  const response=await fetch("data/forecast/"+h+"h.geojson?t="+Date.now(),{cache:"no-store"});
   if(!response.ok)throw Error("HTTP "+response.status);
   const data=await response.json();
-  if(current!==requestNumber)return;
-
-  const meta=data.metadata||{};
-  if(data.type!=="FeatureCollection"||
-     meta.status!=="ready"||
-     meta.forecast_available!==true||
-     meta.probability_calibrated!==false||
-     meta.horizon_hours!==selected||
-     !Array.isArray(data.features)){
-   throw Error("Prodotto non valido o non disponibile");
-  }
-
-  const generated=new Date(meta.generated_at);
-  const valid=new Date(meta.forecast_valid_at);
-  if(!Number.isFinite(generated.getTime())||
-     !Number.isFinite(valid.getTime())){
-   throw Error("Timestamp GFS non valido");
-  }
-  const age=(Date.now()-generated.getTime())/3600000;
-  if(age<-.25||age>12||valid.getTime()<Date.now()){
-   throw Error("Previsione GFS scaduta");
-  }
-
-  const features=data.features.filter(validFeature);
-  if(features.length!==data.features.length){
-   throw Error("Geometrie GFS non valide");
-  }
-  features.forEach(drawFeature);
-
-  status.textContent=
-   "GFS SPERIMENTALE · "+features.length+
-   " POLIGONI · VALIDO "+formatTime(meta.forecast_valid_at)+
-   " · CLASSI NON CALIBRATE";
-
-  if(waveObjects.length&&!reduceMotion){
-   animationId=requestAnimationFrame(animate);
-  }
- }catch(error){
-  if(current!==requestNumber)return;
-  clearMap();
-  status.textContent=
-   "DATI GFS NON DISPONIBILI · "+error.message;
-  console.error("SIBILLA GFS:",error);
+  if(id!==requestId)return;
+  const m=data.metadata||{};
+  if(data.type!=="FeatureCollection"||m.status!=="ready"||
+     m.horizon_hours!==h||m.probability_calibrated!==false||
+     !Array.isArray(data.features))throw Error("Prodotto non valido");
+  const generated=Date.parse(m.generated_at),valid=Date.parse(m.forecast_valid_at);
+  if(!Number.isFinite(generated)||!Number.isFinite(valid)||
+     Date.now()-generated>12*3600000||
+     generated-Date.now()>15*60000||
+     valid<Date.now())throw Error("Dati scaduti");
+  const areas=buildAreas(data.features);
+  areas.forEach(drawArea);
+  status.textContent="GFS SPERIMENTALE · "+data.features.length+
+   " CELLE → "+areas.length+" AREE · VALIDO "+
+   localTime(m.forecast_valid_at)+" · NON CALIBRATO";
+  if(waveItems.length&&!reduced)animation=requestAnimationFrame(animate);
+ }catch(e){
+  if(id!==requestId)return;
+  clear();status.textContent="DATI GFS NON DISPONIBILI · "+e.message;
+  console.error("SIBILLA:",e);
  }
 }
-
-document.querySelectorAll(".tabs button")
-.forEach(button=>{
- button.addEventListener("click",()=>{
-  horizon=Number(button.dataset.h);
-  document.querySelectorAll(".tabs button")
-   .forEach(b=>b.classList.remove("active"));
-  button.classList.add("active");
-  loadForecast();
- });
+document.querySelectorAll(".tabs button").forEach(b=>{
+ b.onclick=()=>{
+  horizon=Number(b.dataset.h);
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");load();
+ };
 });
-
 document.getElementById("toggle").onclick=()=>{
- document.getElementById("legend")
-  .classList.toggle("closed");
+ document.getElementById("legend").classList.toggle("closed");
 };
-if(innerWidth<=650){
- document.getElementById("legend")
-  .classList.add("closed");
-}
-map.on("zoomend",()=>{
- if(waveObjects.length){
-  for(const obj of waveObjects){
-   obj.layer.setLatLngs(obj.coords);
-  }
- }
-});
-loadForecast();
+map.on("zoomend",()=>{if(waveItems.length){cancelAnimationFrame(animation);animation=requestAnimationFrame(animate)}});
+load();
 })();
 </script>
 </body>
