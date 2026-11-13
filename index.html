@@ -1,0 +1,310 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>S.I.B.I.L.L.A. | Nowcasting Italia</title>
+<link rel="stylesheet"
+ href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;
+ background:#030c19;color:#fff;
+ font-family:Arial,Helvetica,sans-serif}
+#map{position:absolute;inset:0;background:#071526}
+.leaflet-container{background:#071526}
+.leaflet-control-attribution{
+ background:#071526d9!important;
+ color:#ddd!important;font-size:10px!important}
+.leaflet-control-attribution a{color:#83d9ff!important}
+header{position:absolute;z-index:1000;top:12px;
+ left:50%;transform:translateX(-50%);
+ width:min(96%,680px);pointer-events:none}
+.brand{text-align:center;font-weight:900;
+ font-size:clamp(19px,4vw,30px);letter-spacing:4px;
+ background:linear-gradient(90deg,#00ddff,#478bff,
+ #b648ff,#ff48d7,#00ddff);
+ background-size:300% 100%;
+ -webkit-background-clip:text;background-clip:text;
+ color:transparent;animation:smoke 8s linear infinite;
+ filter:drop-shadow(0 0 8px #5b63ff)}
+@keyframes smoke{
+ to{background-position:300% 0}
+}
+.subtitle{text-align:center;font-size:10px;
+ letter-spacing:2px;color:#d1e5ff;margin:4px}
+.tabs{display:flex;gap:5px;margin-top:12px;
+ padding:5px;border:1px solid #ffffff50;
+ border-radius:13px;background:#061327e8;
+ pointer-events:auto;backdrop-filter:blur(12px)}
+.tabs button{flex:1;border:0;border-radius:9px;
+ background:transparent;color:#b7cde8;
+ padding:11px 4px;font-weight:bold;font-size:13px}
+.tabs button.active{color:#fff;
+ background:linear-gradient(125deg,#1466d0,#792ac4);
+ box-shadow:0 0 13px #6658ff80}
+.legend{position:absolute;z-index:900;
+ top:155px;right:12px;width:265px;
+ max-height:calc(100% - 185px);overflow:auto;
+ background:linear-gradient(145deg,#061428f2,#020b19f2);
+ border:1px solid #ffffff90;border-radius:19px;
+ padding:18px;box-shadow:0 10px 30px #0009;
+ backdrop-filter:blur(12px)}
+.legend h2{font-size:20px;margin:0 0 15px;
+ line-height:1.3}
+.item{display:flex;gap:12px;align-items:center;
+ border-top:1px solid #ffffff1c;padding:11px 0}
+.letter{min-width:53px;height:53px;
+ display:grid;place-items:center;border-radius:12px;
+ font-size:27px;font-weight:800;border:2px solid;
+ box-shadow:inset 0 0 18px currentColor,
+ 0 0 11px currentColor}
+.a{color:#df45ff;background:#a019c733}
+.b{color:#398bff;background:#2465ef33}
+.c{color:#00ecf5;background:#00a6b333}
+.d{color:#a6b4c5;background:#7b879533}
+.item strong{display:block;font-size:13px;color:white}
+.item small{display:block;font-size:11px;
+ color:#c4d3e5;line-height:1.5;margin-top:3px}
+.note{border-top:1px solid #ffffff50;
+ padding-top:12px;font-size:11px;
+ line-height:1.6;color:#b8cbe5}
+.demo{position:absolute;z-index:900;bottom:30px;
+ left:50%;transform:translateX(-50%);
+ background:#061428e8;border:1px solid #6e85a0;
+ padding:8px 13px;border-radius:9px;
+ text-align:center;font-size:11px;
+ pointer-events:none;white-space:nowrap}
+.toggle{display:none}
+.leaflet-interactive{outline:none}
+.sib-polygon{stroke-linejoin:round;
+ stroke-linecap:round}
+.wave-a{animation:waveA 3.8s ease-in-out infinite}
+.wave-b{animation:waveB 4.5s ease-in-out infinite}
+.wave-c{animation:waveC 5.2s ease-in-out infinite}
+@keyframes waveA{
+ 0%,100%{stroke-opacity:.9;stroke-width:2.5;
+ filter:drop-shadow(0 0 3px #ef44ff)}
+ 50%{stroke-opacity:.35;stroke-width:8;
+ filter:drop-shadow(0 0 13px #dc38ff)}
+}
+@keyframes waveB{
+ 0%,100%{stroke-opacity:.9;stroke-width:2.5;
+ filter:drop-shadow(0 0 3px #398bff)}
+ 50%{stroke-opacity:.35;stroke-width:8;
+ filter:drop-shadow(0 0 13px #398bff)}
+}
+@keyframes waveC{
+ 0%,100%{stroke-opacity:.9;stroke-width:2.5;
+ filter:drop-shadow(0 0 3px #00f5ff)}
+ 50%{stroke-opacity:.35;stroke-width:8;
+ filter:drop-shadow(0 0 13px #00f5ff)}
+}
+.leaflet-popup-content-wrapper{
+ background:#07172b;color:white;
+ border:1px solid #6383a8;border-radius:14px}
+.leaflet-popup-tip{background:#07172b}
+.leaflet-popup-content{line-height:1.7}
+.leaflet-popup-close-button{color:white!important}
+@media(max-width:650px){
+ header{top:8px}
+ .brand{font-size:20px}
+ .subtitle{font-size:9px}
+ .tabs{margin-top:8px}
+ .legend{top:auto;bottom:52px;right:8px;
+ width:min(260px,72vw);max-height:58vh;
+ padding:12px;border-radius:14px}
+ .legend h2{font-size:16px;margin-bottom:5px}
+ .item{padding:7px 0}
+ .letter{min-width:40px;height:40px;font-size:22px}
+ .toggle{display:block;position:absolute;
+ z-index:1001;right:8px;bottom:10px;
+ background:#081b36;color:white;
+ border:1px solid #8ea5c5;border-radius:10px;
+ padding:9px 13px}
+ .legend.closed{display:none}
+ .demo{bottom:9px;left:8px;transform:none;
+ max-width:65%;white-space:normal;font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .brand,.wave-a,.wave-b,.wave-c{animation:none}
+}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<header>
+ <div class="brand">S.I.B.I.L.L.A.</div>
+ <div class="subtitle">INDICE DI PROBABILITÀ CONVETTIVA</div>
+ <nav class="tabs" aria-label="Orizzonte previsionale">
+  <button class="active" data-h="3">3 ORE</button>
+  <button data-h="24">24 ORE</button>
+  <button data-h="48">48 ORE</button>
+  <button data-h="72">72 ORE</button>
+ </nav>
+</header>
+<aside id="legend" class="legend">
+ <h2>Legenda<br>Potenziale convettivo</h2>
+ <div class="item">
+  <span class="letter a">A</span>
+  <div><strong>Potenziale elevato</strong>
+  <small>Condizioni molto favorevoli
+  alla convezione intensa</small></div>
+ </div>
+ <div class="item">
+  <span class="letter b">B</span>
+  <div><strong>Potenziale moderato</strong>
+  <small>Condizioni favorevoli alla
+  convezione organizzata</small></div>
+ </div>
+ <div class="item">
+  <span class="letter c">C</span>
+  <div><strong>Potenziale basso</strong>
+  <small>Convezione possibile,
+  generalmente meno organizzata</small></div>
+ </div>
+ <div class="item">
+  <span class="letter d">D</span>
+  <div><strong>Potenziale non significativo</strong>
+  <small>Segnale convettivo debole
+  o assente</small></div>
+ </div>
+ <div class="note">
+  I contorni luminosi pulsanti rappresentano
+  le aree previsionali. I contorni osservativi
+  rimangono fissi.
+  <p>La pulsazione è esclusivamente grafica:
+  non rappresenta variazioni del potenziale.</p>
+ </div>
+</aside>
+<button class="toggle" id="toggle">Legenda</button>
+<div class="demo">
+ SIMULAZIONE GRAFICA · POLIGONI NON REALI
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+"use strict";
+const map=L.map("map",{
+ center:[41.8,12.4],zoom:5,
+ zoomControl:false,preferCanvas:false,
+ minZoom:3,maxZoom:9
+});
+L.control.zoom({position:"bottomleft"}).addTo(map);
+
+// NASA GIBS: imagery pubblica via WMTS.
+// Data dimostrativa: due giorni precedenti UTC.
+const dt=new Date();
+dt.setUTCDate(dt.getUTCDate()-2);
+const day=dt.toISOString().slice(0,10);
+const nasaURL=
+ "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/"+
+ "VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/"+
+ day+"/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpeg";
+const satellite=L.tileLayer(nasaURL,{
+ maxNativeZoom:8,maxZoom:9,
+ attribution:"Imagery: NASA GIBS / VIIRS NOAA-20",
+ crossOrigin:true
+}).addTo(map);
+
+// Contorni costieri ufficiali NASA.
+L.tileLayer(
+ "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/"+
+ "Coastlines_15m/default/GoogleMapsCompatible_Level13/"+
+ "{z}/{y}/{x}.png",{
+ opacity:.75,maxNativeZoom:12,maxZoom:13,
+ attribution:"Coastlines: NASA GIBS"
+}).addTo(map);
+
+const colors={
+ A:"#e33bff",B:"#328aff",
+ C:"#00edfa",D:"#9ba8bb"
+};
+
+// Geometrie ESCLUSIVAMENTE dimostrative.
+// Non rappresentano previsioni meteorologiche.
+const examples=[
+ {id:"centro",grade:"A",name:"Italia centrale",
+  points:[[43.5,10.4],[43.2,12.0],[42.8,13.5],
+  [41.9,15.1],[40.7,15.0],[39.8,13.7],
+  [40.2,11.8],[41.0,10.2],[42.2,9.8]]},
+ {id:"nord",grade:"B",name:"Italia settentrionale",
+  points:[[46.5,7.9],[46.8,9.5],[46.5,11.7],
+  [45.8,12.6],[44.8,11.4],[44.9,9.3],
+  [45.4,8.0]]},
+ {id:"sud",grade:"C",name:"Italia meridionale",
+  points:[[39.4,13.0],[39.5,15.0],[38.7,16.9],
+  [37.6,16.4],[37.1,14.5],[38.0,12.8]]},
+ {id:"ovest",grade:"D",name:"Mediterraneo occidentale",
+  points:[[42.1,5.5],[42.8,7.1],[41.5,8.3],
+  [39.8,8.2],[39.2,6.1],[40.0,5.1]]}
+];
+
+const forecastLayer=L.layerGroup().addTo(map);
+const observedLayer=L.layerGroup().addTo(map);
+let horizon=3;
+
+function createPolygon(area){
+ const color=colors[area.grade];
+ const css=area.grade==="D"?"sib-polygon":
+   "sib-polygon wave-"+area.grade.toLowerCase();
+ const polygon=L.polygon(area.points,{
+  color,weight:2.5,opacity:.95,
+  fillColor:color,
+  fillOpacity:area.grade==="D"?.12:.24,
+  className:css,
+  interactive:true
+ });
+ polygon.bindPopup(
+  "<strong>"+area.name+"</strong><br>"+
+  "Classe "+area.grade+" · +"+horizon+" ore<br>"+
+  "Poligono dimostrativo<br>"+
+  "Nessuna previsione reale disponibile"
+ );
+ polygon.addTo(forecastLayer);
+ const center=polygon.getBounds().getCenter();
+ L.marker(center,{
+  icon:L.divIcon({
+   className:"",
+   html:'<div style="font-size:31px;font-weight:900;'+
+   'color:white;text-shadow:0 0 9px '+color+
+   ',0 2px 4px #000">'+area.grade+'</div>',
+   iconSize:[35,38],iconAnchor:[17,19]
+  }),
+  interactive:false
+ }).addTo(forecastLayer);
+}
+
+function render(h){
+ horizon=h;
+ forecastLayer.clearLayers();
+ observedLayer.clearLayers();
+ examples.forEach(createPolygon);
+ // Nessun poligono osservato inventato.
+ // I contorni fissi arriveranno dai radar I.R.I.D.E.
+}
+
+document.querySelectorAll(".tabs button")
+ .forEach(button=>{
+  button.addEventListener("click",()=>{
+   document.querySelectorAll(".tabs button")
+    .forEach(b=>b.classList.remove("active"));
+   button.classList.add("active");
+   render(Number(button.dataset.h));
+  });
+ });
+
+document.getElementById("toggle")
+ .addEventListener("click",()=>{
+  document.getElementById("legend")
+   .classList.toggle("closed");
+ });
+
+if(window.innerWidth<=650){
+ document.getElementById("legend")
+  .classList.add("closed");
+}
+render(3);
+</script>
+</body>
+</html>
