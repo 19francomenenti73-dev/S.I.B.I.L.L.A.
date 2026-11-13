@@ -112,17 +112,13 @@ header{
  position:absolute;z-index:850;
  left:8px;bottom:45px;
  max-width:min(67%,440px);
- padding:7px 9px;
- background:#061326e9;
+ padding:7px 9px;background:#061326e9;
  border:1px solid #ffffff65;
- border-radius:9px;
- font-size:9px;line-height:1.5;
- color:#e4edf9
+ border-radius:9px;font-size:9px;
+ line-height:1.5;color:#e4edf9
 }
 .credits strong{color:white}
-.credits a{
- color:#a8d7ff;text-decoration:underline
-}
+.credits a{color:#a8d7ff;text-decoration:underline}
 .status{
  position:absolute;z-index:850;bottom:100px;
  left:8px;padding:7px 10px;
@@ -224,15 +220,13 @@ Il ritaglio geografico non aumenta la risoluzione meteorologica.
 <div class="credits">
 <strong>S.I.B.I.L.L.A. · Nowcasting Italia</strong><br>
 Dati: <a href="https://www.nco.ncep.noaa.gov/pmb/products/gfs/" target="_blank" rel="noopener noreferrer">NOAA/NCEP GFS</a><br>
-Cartografia: <a href="https://opentopomap.org/" target="_blank" rel="noopener noreferrer">OpenTopoMap</a> /
-<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a><br>
+Cartografia: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a><br>
 Indice sperimentale · non calibrato
 </div>
 
 <div class="status" id="status">CARICAMENTO GFS...</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
- 
 (()=>{
 "use strict";
 
@@ -241,9 +235,14 @@ const map=L.map("map",{
  preferCanvas:false,zoomControl:false
 });
 L.control.zoom({position:"bottomleft"}).addTo(map);
+
+// Nuova cartografia: OpenStreetMap Standard
 L.tileLayer(
- "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
- {maxZoom:17,attribution:"© OpenTopoMap · © OpenStreetMap"}
+ "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+ {
+  maxZoom:19,
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+ }
 ).addTo(map);
 
 for(const [name,z] of [
@@ -268,7 +267,7 @@ const reduced=window.matchMedia(
 
 let horizon=3,requestId=0,frame=0;
 let pulses=[],items=[];
-
+ 
 function clear(){
  cancelAnimationFrame(frame);
  areas.clearLayers();
@@ -449,8 +448,8 @@ function localTime(value){
   day:"2-digit",month:"2-digit",
   hour:"2-digit",minute:"2-digit"
  });
-}
-
+ }
+ 
 async function load(){
  const id=++requestId,h=horizon;
  clear();
