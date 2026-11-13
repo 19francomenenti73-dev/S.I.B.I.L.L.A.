@@ -49,12 +49,13 @@ header{
  color:white;box-shadow:0 0 13px #605bff88
 }
 .legend{
- position:absolute;z-index:900;top:150px;right:12px;
+ position:absolute;z-index:1100;top:150px;right:12px;
  width:268px;max-height:calc(100% - 195px);
  overflow:auto;background:#061326f5;
  border:1px solid #ffffffa0;border-radius:19px;
  padding:17px;box-shadow:0 8px 28px #0008
 }
+.legend.closed{display:none}
 .legend h2{margin:0 0 12px;font-size:20px}
 .item{
  display:flex;gap:12px;align-items:center;
@@ -79,14 +80,56 @@ header{
  border-top:1px solid #ffffff55;padding-top:12px;
  font-size:11px;line-height:1.6;color:#c2d3e8
 }
-.toggle{display:none}
+.toggle{
+ position:absolute;z-index:1000;
+ right:8px;bottom:44px;padding:9px 12px;
+ background:#08182e;color:white;
+ border:1px solid #9db4ce;border-radius:10px;
+ font-size:12px;font-weight:bold
+}
+.mini-legend{
+ position:absolute;z-index:900;
+ right:8px;bottom:91px;
+ display:flex;align-items:center;gap:8px;
+ padding:8px 10px;border-radius:11px;
+ border:1px solid #ffffff80;
+ background:#061326e9;
+ box-shadow:0 3px 14px #0006
+}
+.mini-legend .mini-title{
+ font-size:10px;font-weight:bold;
+ color:#e4edf9;margin-right:2px
+}
+.mini-key{
+ display:flex;align-items:center;gap:3px;
+ font-size:12px;font-weight:900
+}
+.mini-key i{
+ display:block;width:9px;height:9px;
+ border-radius:3px;background:var(--key)
+}
+.credits{
+ position:absolute;z-index:850;
+ left:8px;bottom:45px;
+ max-width:min(67%,440px);
+ padding:7px 9px;
+ background:#061326e9;
+ border:1px solid #ffffff65;
+ border-radius:9px;
+ font-size:9px;line-height:1.5;
+ color:#e4edf9
+}
+.credits strong{color:white}
+.credits a{
+ color:#a8d7ff;text-decoration:underline
+}
 .status{
- position:absolute;z-index:850;bottom:26px;
- left:50%;transform:translateX(-50%);
- padding:8px 12px;background:#07172ae9;
+ position:absolute;z-index:850;bottom:100px;
+ left:8px;padding:7px 10px;
+ background:#07172ae9;
  border:1px solid #8ba0b9;border-radius:9px;
- font-size:10px;text-align:center;
- pointer-events:none;max-width:85%
+ font-size:9px;text-align:left;
+ pointer-events:none;max-width:63%
 }
 .sib-label{
  background:transparent!important;border:0!important;
@@ -105,24 +148,33 @@ header{
 }
 .leaflet-popup-tip{background:#08172b}
 .leaflet-popup-close-button{color:white!important}
+.leaflet-control-attribution{
+ background:#ffffffed!important;
+ color:#17253b!important;
+ font-size:10px!important
+}
 @media(max-width:650px){
  .brand{font-size:23px}
  .subtitle{font-size:9px}
  .tabs{margin-top:8px}
  .legend{
-  top:auto;bottom:54px;right:8px;
-  width:min(270px,76vw);max-height:55vh;padding:12px
+  top:auto;bottom:150px;right:8px;
+  width:min(290px,85vw);
+  max-height:55vh;padding:12px
  }
- .legend.closed{display:none}
- .toggle{
-  display:block;position:absolute;z-index:1000;
-  right:8px;bottom:12px;padding:10px 14px;
-  background:#08182e;color:white;
-  border:1px solid #9db4ce;border-radius:10px
+ .mini-legend{
+  right:8px;bottom:91px;
+  gap:7px;padding:7px 9px
+ }
+ .mini-legend .mini-title{font-size:9px}
+ .mini-key{font-size:12px}
+ .credits{
+  left:8px;bottom:43px;
+  max-width:70%;font-size:8px
  }
  .status{
-  left:8px;bottom:10px;transform:none;
-  max-width:63%;font-size:9px
+  left:8px;bottom:141px;
+  max-width:62%;font-size:9px
  }
 }
 @media(prefers-reduced-motion:reduce){
@@ -142,18 +194,45 @@ header{
 <button data-h="72">72 ORE</button>
 </nav>
 </header>
+
 <aside class="legend closed" id="legend">
 <h2>Potenziale convettivo</h2>
 <div class="item"><span class="letter a">A</span><div><strong>Elevato</strong><small>Condizioni molto favorevoli alla convezione intensa</small></div></div>
 <div class="item"><span class="letter b">B</span><div><strong>Moderato</strong><small>Condizioni favorevoli alla convezione organizzata</small></div></div>
 <div class="item"><span class="letter c">C</span><div><strong>Basso</strong><small>Convezione possibile, generalmente meno organizzata</small></div></div>
 <div class="item"><span class="letter d">D</span><div><strong>Non significativo</strong><small>Segnale convettivo debole o assente</small></div></div>
-<div class="note">Dati NOAA GFS. Indice sperimentale non calibrato. Aree limitate alle terre emerse. Il ritaglio geografico non aumenta la risoluzione meteorologica.</div>
+<div class="note">
+Dati meteorologici NOAA/NCEP – GFS.<br>
+Indice sperimentale non calibrato.<br>
+Le classi non rappresentano probabilità percentuali.<br>
+Aree limitate alle terre emerse.<br>
+Il ritaglio geografico non aumenta la risoluzione meteorologica.
+</div>
 </aside>
-<button class="toggle" id="toggle">Legenda</button>
+
+<div class="mini-legend" aria-label="Legenda classi convettive">
+<span class="mini-title">IPC</span>
+<span class="mini-key" style="--key:#e23fff;color:#e23fff"><i></i>A</span>
+<span class="mini-key" style="--key:#388dff;color:#73b0ff"><i></i>B</span>
+<span class="mini-key" style="--key:#00edfa;color:#00edfa"><i></i>C</span>
+<span class="mini-key" style="--key:#d0d8e4;color:#d0d8e4"><i></i>D</span>
+</div>
+
+<button class="toggle" id="toggle"
+ aria-expanded="false" aria-controls="legend">Legenda</button>
+
+<div class="credits">
+<strong>S.I.B.I.L.L.A. · Nowcasting Italia</strong><br>
+Dati: <a href="https://www.nco.ncep.noaa.gov/pmb/products/gfs/" target="_blank" rel="noopener noreferrer">NOAA/NCEP GFS</a><br>
+Cartografia: <a href="https://opentopomap.org/" target="_blank" rel="noopener noreferrer">OpenTopoMap</a> /
+<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a><br>
+Indice sperimentale · non calibrato
+</div>
+
 <div class="status" id="status">CARICAMENTO GFS...</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+ 
 (()=>{
 "use strict";
 
@@ -209,8 +288,6 @@ function safe(value){
  );
 }
 
-/* Verifica che un punto appartenga al poligono.
-   Tiene conto anche dei fori e dei multipoligoni. */
 function inRing(point,ring){
  let inside=false;
  const x=point[0],y=point[1];
@@ -224,6 +301,7 @@ function inRing(point,ring){
  }
  return inside;
 }
+
 function inPolygon(point,rings){
  if(!rings.length||!inRing(point,rings[0]))return false;
  for(let i=1;i<rings.length;i++){
@@ -231,6 +309,7 @@ function inPolygon(point,rings){
  }
  return true;
 }
+
 function contains(geometry,lat,lon){
  if(!geometry)return false;
  const point=[lon,lat];
@@ -291,7 +370,9 @@ function drawArea(feature){
      fill:false,lineJoin:"round"
     }
    }).addTo(wavesLayer);
-   pulses.push({pulse,phase:(pulses.length%3)/3});
+   pulses.push({
+    pulse,phase:(pulses.length%3)/3
+   });
   }
  }
 
@@ -449,9 +530,13 @@ document.querySelectorAll(".tabs button").forEach(button=>{
  };
 });
 
-document.getElementById("toggle").onclick=()=>{
- document.getElementById("legend")
-  .classList.toggle("closed");
+const toggle=document.getElementById("toggle");
+const legend=document.getElementById("legend");
+
+toggle.onclick=()=>{
+ const closed=legend.classList.toggle("closed");
+ toggle.setAttribute("aria-expanded",String(!closed));
+ toggle.textContent=closed?"Legenda":"Chiudi legenda";
 };
 
 map.on("zoomend moveend",()=>{
