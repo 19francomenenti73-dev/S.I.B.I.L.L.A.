@@ -9,141 +9,92 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box}
-html,body{
- margin:0;width:100%;height:100%;overflow:hidden;
- background:#081426;color:#fff;font-family:Arial,sans-serif
-}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;
+background:#081426;color:#fff;font-family:Arial,sans-serif}
 #map{position:absolute;inset:0;background:#d5dce2}
 .leaflet-container{background:#d5dce2}
 .leaflet-control-attribution{font-size:9px!important}
-header{
- position:absolute;z-index:1000;top:8px;left:50%;
- transform:translateX(-50%);width:min(96%,650px);
- pointer-events:none
-}
-.brand{
- text-align:center;font-size:clamp(23px,4vw,32px);
- font-weight:900;letter-spacing:3px;
- background:linear-gradient(90deg,
- #00eaff,#347bff,#b34aff,#ff4bd8,#00eaff);
- background-size:300% 100%;
- -webkit-background-clip:text;background-clip:text;
- color:transparent;animation:smoke 8s linear infinite;
- filter:drop-shadow(0 1px 3px #071425)
-}
+header{position:absolute;z-index:1000;top:8px;left:50%;
+transform:translateX(-50%);width:min(96%,650px);
+pointer-events:none}
+.brand{text-align:center;font-size:clamp(23px,4vw,32px);
+font-weight:900;letter-spacing:3px;
+background:linear-gradient(90deg,#00eaff,#347bff,#b34aff,
+#ff4bd8,#00eaff);background-size:300% 100%;
+-webkit-background-clip:text;background-clip:text;
+color:transparent;animation:smoke 8s linear infinite;
+filter:drop-shadow(0 1px 3px #071425)}
 @keyframes smoke{to{background-position:300% 0}}
-.subtitle{
- text-align:center;font-size:10px;letter-spacing:1.5px;
- color:#fff;text-shadow:0 1px 5px #000;
- margin-top:4px
-}
-.tabs{
- display:flex;gap:5px;margin-top:12px;padding:5px;
- background:#08182eef;border:1px solid #ffffff77;
- border-radius:13px;pointer-events:auto;
- box-shadow:0 3px 20px #0006
-}
-.tabs button{
- flex:1;padding:12px 3px;border:0;border-radius:9px;
- background:transparent;color:#c1d3e7;
- font-weight:bold;font-size:13px;cursor:pointer
-}
-.tabs button.active{
- background:linear-gradient(110deg,#086fd5,#852bd1);
- color:white;box-shadow:0 0 13px #605bff88
-}
-.legend{
- position:absolute;z-index:900;top:150px;right:12px;
- width:268px;max-height:calc(100% - 195px);
- overflow:auto;background:#061326f5;
- border:1px solid #ffffffa0;border-radius:19px;
- padding:17px;box-shadow:0 8px 28px #0008
-}
+.subtitle{text-align:center;font-size:10px;
+letter-spacing:1.5px;color:#fff;
+text-shadow:0 1px 5px #000;margin-top:4px}
+.tabs{display:flex;gap:5px;margin-top:12px;padding:5px;
+background:#08182eef;border:1px solid #ffffff77;
+border-radius:13px;pointer-events:auto;
+box-shadow:0 3px 20px #0006}
+.tabs button{flex:1;padding:12px 3px;border:0;
+border-radius:9px;background:transparent;color:#c1d3e7;
+font-weight:bold;font-size:13px;cursor:pointer}
+.tabs button.active{background:linear-gradient(110deg,
+#086fd5,#852bd1);color:white;
+box-shadow:0 0 13px #605bff88}
+.legend{position:absolute;z-index:900;top:150px;right:12px;
+width:268px;max-height:calc(100% - 195px);
+overflow:auto;background:#061326f5;
+border:1px solid #ffffffa0;border-radius:19px;
+padding:17px;box-shadow:0 8px 28px #0008}
 .legend h2{margin:0 0 12px;font-size:20px}
-.item{
- display:flex;gap:12px;align-items:center;
- border-top:1px solid #ffffff25;padding:10px 0
-}
-.letter{
- width:54px;min-width:54px;height:54px;
- display:grid;place-items:center;border:2px solid;
- border-radius:12px;font-size:28px;font-weight:800;
- box-shadow:inset 0 0 14px currentColor,
- 0 0 9px currentColor
-}
+.item{display:flex;gap:12px;align-items:center;
+border-top:1px solid #ffffff25;padding:10px 0}
+.letter{width:54px;min-width:54px;height:54px;
+display:grid;place-items:center;border:2px solid;
+border-radius:12px;font-size:28px;font-weight:800;
+box-shadow:inset 0 0 14px currentColor,
+0 0 9px currentColor}
 .a{color:#e23fff;background:#a41ad333}
 .b{color:#388dff;background:#2867e933}
 .c{color:#00edfa;background:#00adbd33}
 .d{color:#9daabc;background:#8491a033}
 .item strong{font-size:13px;display:block}
-.item small{
- font-size:11px;color:#c6d5e7;line-height:1.5;
- display:block;margin-top:4px
-}
-.note{
- border-top:1px solid #ffffff55;padding-top:12px;
- font-size:11px;line-height:1.6;color:#c2d3e8
-}
+.item small{font-size:11px;color:#c6d5e7;
+line-height:1.5;display:block;margin-top:4px}
+.note{border-top:1px solid #ffffff55;padding-top:12px;
+font-size:11px;line-height:1.6;color:#c2d3e8}
 .toggle{display:none}
-.demo{
- position:absolute;z-index:850;bottom:26px;left:50%;
- transform:translateX(-50%);padding:8px 12px;
- background:#07172ae9;border:1px solid #8ba0b9;
- border-radius:9px;font-size:10px;text-align:center;
- pointer-events:none
-}
-.sib-label{
- font-weight:900;font-size:30px;color:white;
- text-shadow:0 0 7px #000,0 0 12px #000;
- text-align:center
-}
-.leaflet-popup-content-wrapper{
- background:#08172b;color:white;
- border:1px solid #7392b5;border-radius:12px
-}
+.demo{position:absolute;z-index:850;bottom:26px;left:50%;
+transform:translateX(-50%);padding:8px 12px;
+background:#07172ae9;border:1px solid #8ba0b9;
+border-radius:9px;font-size:10px;text-align:center;
+pointer-events:none;max-width:80%}
+.sib-label{font-weight:900;font-size:22px;color:white;
+text-shadow:0 0 7px #000,0 0 12px #000;
+text-align:center}
+.leaflet-popup-content-wrapper{background:#08172b;
+color:white;border:1px solid #7392b5;border-radius:12px}
 .leaflet-popup-tip{background:#08172b}
 .leaflet-popup-close-button{color:white!important}
-
-/* Onde SVG: geometria esterna progressiva */
-.sib-wave{
- pointer-events:none;
- stroke-linejoin:round;stroke-linecap:round;
- vector-effect:non-scaling-stroke
-}
-.sib-core{
- stroke-linejoin:round;stroke-linecap:round;
- filter:drop-shadow(0 0 5px currentColor)
-}
+.sib-core{stroke-linejoin:round;stroke-linecap:round}
+.sib-wave{pointer-events:none;stroke-linejoin:round;
+stroke-linecap:round;vector-effect:non-scaling-stroke}
 @media(max-width:650px){
- header{top:8px}
- .brand{font-size:23px}
- .subtitle{font-size:9px}
- .tabs{margin-top:8px}
- .legend{
-  top:auto;bottom:54px;right:8px;
-  width:min(270px,76vw);max-height:55vh;
-  padding:12px;border-radius:14px
- }
- .legend h2{font-size:17px}
- .item{padding:7px 0}
- .letter{
-  width:43px;min-width:43px;
-  height:43px;font-size:22px
- }
- .toggle{
-  display:block;position:absolute;z-index:1000;
-  right:8px;bottom:12px;padding:10px 14px;
-  background:#08182e;color:white;
-  border:1px solid #9db4ce;border-radius:10px
- }
- .legend.closed{display:none}
- .demo{
-  left:8px;bottom:10px;transform:none;
-  max-width:63%;font-size:9px
- }
+header{top:8px}.brand{font-size:23px}
+.subtitle{font-size:9px}.tabs{margin-top:8px}
+.legend{top:auto;bottom:54px;right:8px;
+width:min(270px,76vw);max-height:55vh;
+padding:12px;border-radius:14px}
+.legend h2{font-size:17px}.item{padding:7px 0}
+.letter{width:43px;min-width:43px;height:43px;
+font-size:22px}
+.toggle{display:block;position:absolute;z-index:1000;
+right:8px;bottom:12px;padding:10px 14px;
+background:#08182e;color:white;
+border:1px solid #9db4ce;border-radius:10px}
+.legend.closed{display:none}
+.demo{left:8px;bottom:10px;transform:none;
+max-width:63%;font-size:9px}
 }
 @media(prefers-reduced-motion:reduce){
- .brand{animation:none}
+.brand{animation:none}
 }
 </style>
 </head>
@@ -161,49 +112,43 @@ header{
 </header>
 <aside class="legend" id="legend">
 <h2>Legenda<br>Potenziale convettivo</h2>
-<div class="item">
-<span class="letter a">A</span>
+<div class="item"><span class="letter a">A</span>
 <div><strong>Potenziale elevato</strong>
-<small>Condizioni molto favorevoli alla convezione intensa</small></div>
-</div>
-<div class="item">
-<span class="letter b">B</span>
+<small>Condizioni molto favorevoli alla convezione intensa</small>
+</div></div>
+<div class="item"><span class="letter b">B</span>
 <div><strong>Potenziale moderato</strong>
-<small>Condizioni favorevoli alla convezione organizzata</small></div>
-</div>
-<div class="item">
-<span class="letter c">C</span>
+<small>Condizioni favorevoli alla convezione organizzata</small>
+</div></div>
+<div class="item"><span class="letter c">C</span>
 <div><strong>Potenziale basso</strong>
-<small>Convezione possibile, generalmente meno organizzata</small></div>
-</div>
-<div class="item">
-<span class="letter d">D</span>
+<small>Convezione possibile, generalmente meno organizzata</small>
+</div></div>
+<div class="item"><span class="letter d">D</span>
 <div><strong>Potenziale non significativo</strong>
-<small>Segnale convettivo debole o assente</small></div>
-</div>
+<small>Segnale convettivo debole o assente</small>
+</div></div>
 <div class="note">
 I poligoni previsionali emettono onde luminose.
 Le osservazioni rimangono fisse.
 La pulsazione è un effetto grafico.
+<br><br>
+Indice sperimentale basato su NOAA GFS.
+Classi non ancora calibrate con osservazioni radar.
 </div>
 </aside>
 <button class="toggle" id="toggle">Legenda</button>
-<div class="demo" id="status">
-SIMULAZIONE GRAFICA · DATI NON REALI
-</div>
+<div class="demo" id="status">CARICAMENTO DATI GFS...</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  
 (()=>{
 "use strict";
 
 const map=L.map("map",{
- center:[42.2,12.5],zoom:5,
- minZoom:3,maxZoom:12,
+ center:[42.2,12.5],zoom:5,minZoom:3,maxZoom:12,
  preferCanvas:false,zoomControl:false
 });
 L.control.zoom({position:"bottomleft"}).addTo(map);
-
 L.tileLayer(
  "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{
  maxZoom:17,
@@ -220,125 +165,117 @@ map.getPane("labelPane").style.zIndex=450;
 const waves=L.layerGroup().addTo(map);
 const forecast=L.layerGroup().addTo(map);
 const labels=L.layerGroup().addTo(map);
-
 const palette={
- A:"#e23fff",
- B:"#388dff",
- C:"#00edfa",
- D:"#9daabc"
+ A:"#e23fff",B:"#388dff",
+ C:"#00edfa",D:"#9daabc"
 };
-
-const samples=[
-{grade:"A",name:"Italia centrale",coords:[
-[43.7,11.0],[43.5,12.2],[43.1,13.1],
-[42.8,14.2],[42.1,14.8],[41.3,15.0],
-[40.5,14.2],[40.1,13.1],[40.3,11.8],
-[40.9,10.5],[41.8,10.0],[42.8,10.3]]},
-{grade:"B",name:"Italia settentrionale",coords:[
-[46.6,8.2],[46.9,9.7],[46.7,11.3],
-[46.1,12.4],[45.3,12.0],[44.9,10.9],
-[45.0,9.2],[45.6,8.1]]},
-{grade:"C",name:"Italia meridionale",coords:[
-[39.3,13.3],[39.6,14.7],[39.3,16.2],
-[38.5,17.0],[37.7,16.5],[37.3,15.0],
-[37.7,13.8],[38.4,13.1]]},
-{grade:"D",name:"Mediterraneo occidentale",coords:[
-[42.3,5.5],[42.6,6.8],[42.0,8.1],
-[40.8,8.5],[39.6,7.7],[39.3,6.3],
-[40.2,5.2],[41.3,5.1]]}
-];
-
-let horizon=3;
-let waveObjects=[];
-let animationId=0;
+const status=document.getElementById("status");
 const reduceMotion=window.matchMedia(
  "(prefers-reduced-motion: reduce)"
 ).matches;
 
-// Offset geometrico verso l'esterno in pixel.
-// Utilizza una normale media ai vertici.
+let horizon=3;
+let requestNumber=0;
+let waveObjects=[];
+let animationId=0;
+let lastFrame=0;
+
 function expandedRing(coords,distance){
  const points=coords.map(p=>map.latLngToLayerPoint(p));
  const n=points.length;
+ if(n<3)return coords;
  const center=points.reduce((a,p)=>{
   a.x+=p.x;a.y+=p.y;return a;
  },{x:0,y:0});
  center.x/=n;center.y/=n;
-
- const expanded=points.map((p,i)=>{
-  const prev=points[(i+n-1)%n];
-  const next=points[(i+1)%n];
-
-  let vx=p.x-center.x;
-  let vy=p.y-center.y;
-  let length=Math.hypot(vx,vy)||1;
-  vx/=length;vy/=length;
-
-  const ax=p.x-prev.x,ay=p.y-prev.y;
-  const bx=next.x-p.x,by=next.y-p.y;
-  const al=Math.hypot(ax,ay)||1;
-  const bl=Math.hypot(bx,by)||1;
-
-  let nx=-(ay/al+by/bl);
-  let ny=(ax/al+bx/bl);
-  let nl=Math.hypot(nx,ny)||1;
-  nx/=nl;ny/=nl;
-
-  // Orientamento della normale verso l'esterno.
-  if(nx*vx+ny*vy<0){nx=-nx;ny=-ny}
-
-  // Evita deformazioni eccessive agli angoli.
-  const dx=nx*.65+vx*.35;
-  const dy=ny*.65+vy*.35;
-  const dl=Math.hypot(dx,dy)||1;
-
+ return points.map(p=>{
+  const vx=p.x-center.x,vy=p.y-center.y;
+  const len=Math.hypot(vx,vy)||1;
   return map.layerPointToLatLng([
-   p.x+dx/dl*distance,
-   p.y+dy/dl*distance
+   p.x+vx/len*distance,
+   p.y+vy/len*distance
   ]);
  });
- return expanded;
 }
 
-function drawArea(area){
- const color=palette[area.grade];
- const active=area.grade!=="D";
+function clearMap(){
+ cancelAnimationFrame(animationId);
+ waves.clearLayers();
+ forecast.clearLayers();
+ labels.clearLayers();
+ waveObjects=[];
+ lastFrame=0;
+}
 
- const polygon=L.polygon(area.coords,{
-  pane:"forecastPane",
-  color,weight:active?3.5:2,
+function animate(time){
+ if(time-lastFrame>=80){
+  lastFrame=time;
+  for(const obj of waveObjects){
+   const phase=((time/4200+obj.phase)%1);
+   const eased=1-Math.pow(1-phase,2);
+   obj.layer.setLatLngs(
+    expandedRing(obj.coords,4+eased*34)
+   );
+   obj.layer.setStyle({
+    opacity:Math.pow(1-phase,1.45)*.65,
+    weight:3+phase*5
+   });
+  }
+ }
+ animationId=requestAnimationFrame(animate);
+}
+
+function validFeature(f){
+ if(!f||f.type!=="Feature"||!f.geometry)return false;
+ if(f.geometry.type!=="Polygon")return false;
+ const p=f.properties||{};
+ if(!palette[p.class])return false;
+ const ring=f.geometry.coordinates?.[0];
+ return Array.isArray(ring)&&ring.length>=4&&
+  ring.every(c=>Array.isArray(c)&&c.length>=2&&
+   Number.isFinite(c[0])&&Number.isFinite(c[1]));
+}
+
+function drawFeature(f){
+ const grade=f.properties.class;
+ const color=palette[grade];
+ const ring=f.geometry.coordinates[0];
+ const coords=ring.slice(0,-1).map(p=>[p[1],p[0]]);
+ if(coords.length<3)return;
+
+ const polygon=L.polygon(coords,{
+  pane:"forecastPane",color,
+  weight:grade==="D"?2:3,
   opacity:1,fillColor:color,
-  fillOpacity:active?.24:.12,
+  fillOpacity:grade==="D"?.12:.24,
   className:"sib-core"
  }).addTo(forecast);
 
+ const p=f.properties;
  polygon.bindPopup(
-  "<b>"+area.name+"</b><br>"+
-  "Classe "+area.grade+" · +"+horizon+" ore<br>"+
-  "Simulazione grafica, non previsione reale"
+  "<b>Indice convettivo sperimentale</b><br>"+
+  "Classe "+grade+"<br>"+
+  "CAPE: "+p.cape_j_kg+" J/kg<br>"+
+  "CIN: "+p.cin_j_kg+" J/kg<br>"+
+  "PWAT: "+p.pwat_kg_m2+" kg/m²<br>"+
+  "Classificazione non calibrata"
  );
 
- if(active){
-  // Alone permanente.
-  L.polygon(area.coords,{
-   pane:"wavePane",color,
-   weight:15,opacity:.16,
-   fill:false,interactive:false
+ if(grade!=="D"){
+  L.polygon(coords,{
+   pane:"wavePane",color,weight:12,
+   opacity:.12,fill:false,interactive:false
   }).addTo(waves);
 
-  // Due onde indipendenti.
-  for(let i=0;i<2;i++){
-   const wave=L.polygon(area.coords,{
-    pane:"wavePane",color,
-    weight:3,opacity:0,
-    fill:false,interactive:false,
+  if(!reduceMotion){
+   const wave=L.polygon(coords,{
+    pane:"wavePane",color,weight:3,
+    opacity:0,fill:false,interactive:false,
     className:"sib-wave"
    }).addTo(waves);
-
    waveObjects.push({
-    layer:wave,coords:area.coords,
-    phase:i*.5,
-    color
+    layer:wave,coords,
+    phase:waveObjects.length%2*.5
    });
   }
  }
@@ -347,54 +284,78 @@ function drawArea(area){
  L.marker(center,{
   pane:"labelPane",interactive:false,
   icon:L.divIcon({
-   className:"sib-label",
-   html:area.grade,
-   iconSize:[38,38],
-   iconAnchor:[19,19]
+   className:"sib-label",html:grade,
+   iconSize:[30,30],iconAnchor:[15,15]
   })
  }).addTo(labels);
 }
 
-function animate(time){
- const duration=4200;
-
- for(const obj of waveObjects){
-  const phase=((time/duration+obj.phase)%1);
-  const eased=1-Math.pow(1-phase,2);
-
-  // Espansione reale fino a 34 pixel.
-  const distance=4+eased*34;
-
-  // Luminosità iniziale e dissolvenza.
-  const opacity=Math.pow(1-phase,1.45)*.72;
-  const weight=3+phase*5;
-
-  obj.layer.setLatLngs(
-   expandedRing(obj.coords,distance)
-  );
-  obj.layer.setStyle({
-   opacity,weight,color:obj.color
-  });
- }
-
- animationId=requestAnimationFrame(animate);
+function formatTime(value){
+ const date=new Date(value);
+ if(!Number.isFinite(date.getTime()))return "non disponibile";
+ return date.toLocaleString("it-IT",{
+  timeZone:"Europe/Rome",
+  day:"2-digit",month:"2-digit",
+  hour:"2-digit",minute:"2-digit"
+ });
 }
 
-function render(){
- cancelAnimationFrame(animationId);
- waves.clearLayers();
- forecast.clearLayers();
- labels.clearLayers();
- waveObjects=[];
+async function loadForecast(){
+ const current=++requestNumber;
+ const selected=horizon;
+ clearMap();
+ status.textContent="CARICAMENTO GFS · +"+selected+" ORE";
 
- samples.forEach(drawArea);
+ try{
+  const response=await fetch(
+   "data/forecast/"+selected+"h.geojson?t="+Date.now(),
+   {cache:"no-store"}
+  );
+  if(!response.ok)throw Error("HTTP "+response.status);
+  const data=await response.json();
+  if(current!==requestNumber)return;
 
- document.getElementById("status").textContent=
-  "SIMULAZIONE GRAFICA · +"+horizon+
-  " ORE · POLIGONI NON REALI";
+  const meta=data.metadata||{};
+  if(data.type!=="FeatureCollection"||
+     meta.status!=="ready"||
+     meta.forecast_available!==true||
+     meta.probability_calibrated!==false||
+     meta.horizon_hours!==selected||
+     !Array.isArray(data.features)){
+   throw Error("Prodotto non valido o non disponibile");
+  }
 
- if(!reduceMotion){
-  animationId=requestAnimationFrame(animate);
+  const generated=new Date(meta.generated_at);
+  const valid=new Date(meta.forecast_valid_at);
+  if(!Number.isFinite(generated.getTime())||
+     !Number.isFinite(valid.getTime())){
+   throw Error("Timestamp GFS non valido");
+  }
+  const age=(Date.now()-generated.getTime())/3600000;
+  if(age<-.25||age>12||valid.getTime()<Date.now()){
+   throw Error("Previsione GFS scaduta");
+  }
+
+  const features=data.features.filter(validFeature);
+  if(features.length!==data.features.length){
+   throw Error("Geometrie GFS non valide");
+  }
+  features.forEach(drawFeature);
+
+  status.textContent=
+   "GFS SPERIMENTALE · "+features.length+
+   " POLIGONI · VALIDO "+formatTime(meta.forecast_valid_at)+
+   " · CLASSI NON CALIBRATE";
+
+  if(waveObjects.length&&!reduceMotion){
+   animationId=requestAnimationFrame(animate);
+  }
+ }catch(error){
+  if(current!==requestNumber)return;
+  clearMap();
+  status.textContent=
+   "DATI GFS NON DISPONIBILI · "+error.message;
+  console.error("SIBILLA GFS:",error);
  }
 }
 
@@ -405,7 +366,7 @@ document.querySelectorAll(".tabs button")
   document.querySelectorAll(".tabs button")
    .forEach(b=>b.classList.remove("active"));
   button.classList.add("active");
-  render();
+  loadForecast();
  });
 });
 
@@ -413,16 +374,18 @@ document.getElementById("toggle").onclick=()=>{
  document.getElementById("legend")
   .classList.toggle("closed");
 };
-
 if(innerWidth<=650){
  document.getElementById("legend")
   .classList.add("closed");
 }
-
-// Ricostruzione delle onde dopo zoom e pan.
-map.on("zoomend moveend",render);
-
-render();
+map.on("zoomend",()=>{
+ if(waveObjects.length){
+  for(const obj of waveObjects){
+   obj.layer.setLatLngs(obj.coords);
+  }
+ }
+});
+loadForecast();
 })();
 </script>
 </body>
