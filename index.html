@@ -9,48 +9,139 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#081426;color:#fff;font-family:Arial,sans-serif}
+html,body{
+ margin:0;width:100%;height:100%;
+ overflow:hidden;background:#081426;
+ color:white;font-family:Arial,sans-serif
+}
 #map{position:absolute;inset:0;background:#d5dce2}
-header{position:absolute;z-index:1000;top:8px;left:50%;transform:translateX(-50%);width:min(96%,650px);pointer-events:none}
-.brand{text-align:center;font-size:clamp(23px,4vw,32px);font-weight:900;letter-spacing:3px;background:linear-gradient(90deg,#00eaff,#347bff,#b34aff,#ff4bd8,#00eaff);background-size:300% 100%;background-clip:text;-webkit-background-clip:text;color:transparent;animation:smoke 8s linear infinite;filter:drop-shadow(0 1px 3px #071425)}
+header{
+ position:absolute;z-index:1000;top:8px;
+ left:50%;transform:translateX(-50%);
+ width:min(96%,650px);pointer-events:none
+}
+.brand{
+ text-align:center;font-size:clamp(23px,4vw,32px);
+ font-weight:900;letter-spacing:3px;
+ background:linear-gradient(90deg,
+ #00eaff,#347bff,#b34aff,#ff4bd8,#00eaff);
+ background-size:300% 100%;
+ background-clip:text;-webkit-background-clip:text;
+ color:transparent;animation:smoke 8s linear infinite;
+ filter:drop-shadow(0 1px 3px #071425)
+}
 @keyframes smoke{to{background-position:300% 0}}
-.subtitle{text-align:center;font-size:10px;letter-spacing:1.5px;text-shadow:0 1px 5px #000}
-.tabs{display:flex;gap:5px;margin-top:12px;padding:5px;background:#08182eef;border:1px solid #ffffff77;border-radius:13px;pointer-events:auto}
-.tabs button{flex:1;padding:12px 3px;border:0;border-radius:9px;background:transparent;color:#c1d3e7;font-weight:bold;font-size:13px}
-.tabs button.active{background:linear-gradient(110deg,#086fd5,#852bd1);color:white;box-shadow:0 0 13px #605bff88}
-.legend{position:absolute;z-index:900;top:150px;right:12px;width:268px;max-height:calc(100% - 195px);overflow:auto;background:#061326f5;border:1px solid #ffffffa0;border-radius:19px;padding:17px;box-shadow:0 8px 28px #0008}
+.subtitle{
+ text-align:center;font-size:10px;
+ letter-spacing:1.5px;text-shadow:0 1px 5px #000
+}
+.tabs{
+ display:flex;gap:5px;margin-top:12px;padding:5px;
+ background:#08182eef;border:1px solid #ffffff77;
+ border-radius:13px;pointer-events:auto
+}
+.tabs button{
+ flex:1;padding:12px 3px;border:0;
+ border-radius:9px;background:transparent;
+ color:#c1d3e7;font-weight:bold;font-size:13px
+}
+.tabs button.active{
+ background:linear-gradient(110deg,#086fd5,#852bd1);
+ color:white;box-shadow:0 0 13px #605bff88
+}
+.legend{
+ position:absolute;z-index:900;top:150px;right:12px;
+ width:268px;max-height:calc(100% - 195px);
+ overflow:auto;background:#061326f5;
+ border:1px solid #ffffffa0;border-radius:19px;
+ padding:17px;box-shadow:0 8px 28px #0008
+}
 .legend h2{margin:0 0 12px;font-size:20px}
-.item{display:flex;gap:12px;align-items:center;border-top:1px solid #ffffff25;padding:10px 0}
-.letter{width:54px;min-width:54px;height:54px;display:grid;place-items:center;border:2px solid;border-radius:12px;font-size:28px;font-weight:800}
+.item{
+ display:flex;gap:12px;align-items:center;
+ border-top:1px solid #ffffff25;padding:10px 0
+}
+.letter{
+ width:54px;min-width:54px;height:54px;
+ display:grid;place-items:center;
+ border:2px solid;border-radius:12px;
+ font-size:28px;font-weight:900
+}
 .a{color:#e23fff;background:#a41ad333}
 .b{color:#388dff;background:#2867e933}
 .c{color:#00edfa;background:#00adbd33}
 .d{color:#d0d8e4;background:#8491a033}
 .item strong{font-size:13px;display:block}
-.item small{font-size:11px;color:#c6d5e7;line-height:1.5;display:block;margin-top:4px}
-.note{border-top:1px solid #ffffff55;padding-top:12px;font-size:11px;line-height:1.6;color:#c2d3e8}
+.item small{
+ font-size:11px;color:#c6d5e7;
+ line-height:1.5;display:block;margin-top:4px
+}
+.note{
+ border-top:1px solid #ffffff55;
+ padding-top:12px;font-size:11px;
+ line-height:1.6;color:#c2d3e8
+}
 .toggle{display:none}
-.status{position:absolute;z-index:850;bottom:26px;left:50%;transform:translateX(-50%);padding:8px 12px;background:#07172ae9;border:1px solid #8ba0b9;border-radius:9px;font-size:10px;text-align:center;pointer-events:none;max-width:85%}
-.sib-label{background:transparent!important;border:0!important;font-weight:900;font-size:27px;line-height:30px;text-align:center;opacity:1!important;-webkit-text-stroke:1.3px #07101c;paint-order:stroke fill;text-shadow:1px 2px 0 #07101c,-1px -1px 0 #07101c,0 0 5px #000}
-.leaflet-popup-content-wrapper{background:#08172b;color:white;border:1px solid #7392b5}
+.status{
+ position:absolute;z-index:850;bottom:26px;
+ left:50%;transform:translateX(-50%);
+ padding:8px 12px;background:#07172ae9;
+ border:1px solid #8ba0b9;border-radius:9px;
+ font-size:10px;text-align:center;
+ pointer-events:none;max-width:85%
+}
+.sib-label{
+ background:transparent!important;
+ border:0!important;
+ font-weight:900;font-size:30px;
+ line-height:34px;text-align:center;
+ opacity:1!important;
+ -webkit-text-stroke:1.4px #06101d;
+ text-shadow:
+  1px 2px 0 #06101d,
+  -1px -1px 0 #06101d,
+  0 0 6px #000;
+}
+.leaflet-popup-content-wrapper{
+ background:#08172b;color:white;
+ border:1px solid #7392b5
+}
 .leaflet-popup-tip{background:#08172b}
 .leaflet-popup-close-button{color:white!important}
 @media(max-width:650px){
-.brand{font-size:23px}.subtitle{font-size:9px}
-.tabs{margin-top:8px}
-.legend{top:auto;bottom:54px;right:8px;width:min(270px,76vw);max-height:55vh;padding:12px}
-.legend.closed{display:none}
-.toggle{display:block;position:absolute;z-index:1000;right:8px;bottom:12px;padding:10px 14px;background:#08182e;color:white;border:1px solid #9db4ce;border-radius:10px}
-.status{left:8px;bottom:10px;transform:none;max-width:63%;font-size:9px}
+ .brand{font-size:23px}
+ .subtitle{font-size:9px}
+ .tabs{margin-top:8px}
+ .legend{
+  top:auto;bottom:54px;right:8px;
+  width:min(270px,76vw);max-height:55vh;
+  padding:12px
+ }
+ .legend.closed{display:none}
+ .toggle{
+  display:block;position:absolute;
+  z-index:1000;right:8px;bottom:12px;
+  padding:10px 14px;background:#08182e;
+  color:white;border:1px solid #9db4ce;
+  border-radius:10px
+ }
+ .status{
+  left:8px;bottom:10px;transform:none;
+  max-width:63%;font-size:9px
+ }
 }
-@media(prefers-reduced-motion:reduce){.brand{animation:none}}
+@media(prefers-reduced-motion:reduce){
+ .brand{animation:none}
+}
 </style>
 </head>
 <body>
 <div id="map"></div>
 <header>
 <div class="brand">S.I.B.I.L.L.A.</div>
-<div class="subtitle">INDICE DI PROBABILITÀ CONVETTIVA</div>
+<div class="subtitle">
+INDICE DI PROBABILITÀ CONVETTIVA
+</div>
 <nav class="tabs">
 <button class="active" data-h="3">3 ORE</button>
 <button data-h="24">24 ORE</button>
@@ -58,29 +149,60 @@ header{position:absolute;z-index:1000;top:8px;left:50%;transform:translateX(-50%
 <button data-h="72">72 ORE</button>
 </nav>
 </header>
+
 <aside class="legend closed" id="legend">
 <h2>Potenziale convettivo</h2>
-<div class="item"><span class="letter a">A</span><div><strong>Elevato</strong><small>Condizioni molto favorevoli alla convezione intensa</small></div></div>
-<div class="item"><span class="letter b">B</span><div><strong>Moderato</strong><small>Condizioni favorevoli alla convezione organizzata</small></div></div>
-<div class="item"><span class="letter c">C</span><div><strong>Basso</strong><small>Convezione possibile, generalmente meno organizzata</small></div></div>
-<div class="item"><span class="letter d">D</span><div><strong>Non significativo</strong><small>Segnale convettivo debole o assente</small></div></div>
-<div class="note">Dati NOAA GFS. Indice sperimentale non calibrato. Visualizzazione limitata alle terre emerse con confini Natural Earth. Il ritaglio geografico non aumenta la precisione meteorologica.</div>
+<div class="item">
+<span class="letter a">A</span>
+<div><strong>Elevato</strong>
+<small>Condizioni molto favorevoli alla convezione intensa</small>
+</div></div>
+<div class="item">
+<span class="letter b">B</span>
+<div><strong>Moderato</strong>
+<small>Condizioni favorevoli alla convezione organizzata</small>
+</div></div>
+<div class="item">
+<span class="letter c">C</span>
+<div><strong>Basso</strong>
+<small>Convezione possibile, generalmente meno organizzata</small>
+</div></div>
+<div class="item">
+<span class="letter d">D</span>
+<div><strong>Non significativo</strong>
+<small>Segnale convettivo debole o assente</small>
+</div></div>
+<div class="note">
+Dati NOAA GFS. Indice sperimentale non calibrato.
+Visualizzazione limitata alle terre emerse con
+confini Natural Earth. Il ritaglio geografico
+non aumenta la precisione meteorologica.
+</div>
 </aside>
+
 <button class="toggle" id="toggle">Legenda</button>
 <div class="status" id="status">CARICAMENTO GFS...</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (()=>{
 "use strict";
+
 const map=L.map("map",{
- center:[42.2,12.5],zoom:5,minZoom:3,maxZoom:12,
- preferCanvas:false,zoomControl:false
+ center:[42.2,12.5],
+ zoom:5,minZoom:3,maxZoom:12,
+ preferCanvas:false,
+ zoomControl:false
 });
 L.control.zoom({position:"bottomleft"}).addTo(map);
-L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{
- maxZoom:17,
- attribution:"© OpenTopoMap · © OpenStreetMap"
-}).addTo(map);
+L.tileLayer(
+ "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+ {
+  maxZoom:17,
+  attribution:"© OpenTopoMap · © OpenStreetMap"
+ }
+).addTo(map);
+
 map.createPane("waves");
 map.getPane("waves").style.zIndex=410;
 map.createPane("areas");
@@ -91,46 +213,73 @@ map.getPane("letters").style.zIndex=450;
 const waveLayer=L.layerGroup().addTo(map);
 const areaLayer=L.layerGroup().addTo(map);
 const labelLayer=L.layerGroup().addTo(map);
+
 const colors={
- A:"#e23fff",B:"#388dff",
- C:"#00edfa",D:"#d0d8e4"
+ A:"#e23fff",
+ B:"#388dff",
+ C:"#00edfa",
+ D:"#d0d8e4"
 };
+
 const status=document.getElementById("status");
 const reduced=window.matchMedia(
  "(prefers-reduced-motion: reduce)"
 ).matches;
+
 let horizon=3;
 let requestId=0;
 let animation=0;
 let waves=[];
 
-/* Tratteggio SVG: righe diagonali di 1 px ogni 9 px.
-   Il pattern e' applicato solo all'interno dei poligoni. */
-const svgNS="http://www.w3.org/2000/svg";
-const defs=document.createElementNS(svgNS,"defs");
-map.getRenderer(L.polygon([[0,0],[0,1],[1,1]])).getContainer().appendChild(defs);
-const patterns={};
-for(const [cls,color] of Object.entries(colors)){
- const pattern=document.createElementNS(svgNS,"pattern");
- const id="sib-hatch-"+cls;
- pattern.setAttribute("id",id);
- pattern.setAttribute("patternUnits","userSpaceOnUse");
- pattern.setAttribute("width","9");
- pattern.setAttribute("height","9");
- pattern.setAttribute("patternTransform","rotate(45)");
- const line=document.createElementNS(svgNS,"line");
- line.setAttribute("x1","0");
- line.setAttribute("y1","0");
- line.setAttribute("x2","0");
- line.setAttribute("y2","9");
- line.setAttribute("stroke",color);
- line.setAttribute("stroke-width","1");
- line.setAttribute("stroke-opacity","0.65");
- pattern.appendChild(line);
- defs.appendChild(pattern);
- patterns[cls]="url(#"+id+")";
-}
+/* Renderer SVG inizializzato esplicitamente.
+   Non utilizziamo getRenderer su layer non aggiunti. */
+const areaRenderer=L.svg({
+ pane:"areas",
+ padding:0.5
+}).addTo(map);
 
+const svgNS="http://www.w3.org/2000/svg";
+const patterns={};
+
+/* I pattern vengono creati solo dopo che
+   Leaflet ha inizializzato il renderer SVG. */
+function createPatterns(){
+ const container=areaRenderer._container;
+ if(!container)return;
+
+ const defs=document.createElementNS(svgNS,"defs");
+ container.insertBefore(defs,container.firstChild);
+
+ for(const [cls,color] of Object.entries(colors)){
+  const id="sib-hatch-"+cls;
+  const pattern=document.createElementNS(svgNS,"pattern");
+
+  pattern.setAttribute("id",id);
+  pattern.setAttribute("patternUnits","userSpaceOnUse");
+  pattern.setAttribute("width","10");
+  pattern.setAttribute("height","10");
+  pattern.setAttribute("patternTransform","rotate(45)");
+
+  const background=document.createElementNS(svgNS,"rect");
+  background.setAttribute("width","10");
+  background.setAttribute("height","10");
+  background.setAttribute("fill",color);
+  background.setAttribute("fill-opacity","0.10");
+  pattern.appendChild(background);
+
+  const line=document.createElementNS(svgNS,"path");
+  line.setAttribute("d","M 0 0 V 10");
+  line.setAttribute("stroke",color);
+  line.setAttribute("stroke-width","1.2");
+  line.setAttribute("stroke-opacity","0.70");
+  pattern.appendChild(line);
+
+  defs.appendChild(pattern);
+  patterns[cls]="url(#"+id+")";
+ }
+}
+createPatterns();
+ 
 function clear(){
  cancelAnimationFrame(animation);
  waveLayer.clearLayers();
@@ -138,40 +287,30 @@ function clear(){
  labelLayer.clearLayers();
  waves=[];
 }
- 
+
 function drawFeature(feature){
  const p=feature.properties||{};
  const cls=p.class;
- if(!colors[cls])return;
+ if(!Object.prototype.hasOwnProperty.call(colors,cls)){
+  return;
+ }
  const color=colors[cls];
 
+ /* Il tratteggio è il riempimento SVG stesso.
+    Non cloniamo i path: Leaflet continua a gestire
+    zoom, spostamenti e aggiornamenti geometrici. */
  const polygon=L.geoJSON(feature,{
   pane:"areas",
+  renderer:areaRenderer,
   style:{
-   color,weight:3,opacity:1,
-   fillColor:color,
-   fillOpacity:cls==="D"?.07:.10,
+   color:color,
+   weight:3,
+   opacity:1,
+   fillColor:patterns[cls]||color,
+   fillOpacity:1,
    lineJoin:"round"
   }
  }).addTo(areaLayer);
-
- polygon.eachLayer(layer=>{
-  if(!(layer instanceof L.Path))return;
-  const element=layer.getElement();
-  if(!element)return;
-  const hatch=element.cloneNode(false);
-  hatch.setAttribute("fill",patterns[cls]);
-  hatch.setAttribute("fill-opacity","1");
-  hatch.setAttribute("stroke","none");
-  hatch.setAttribute("pointer-events","none");
-  element.parentNode.insertBefore(hatch,element);
-  layer.on("remove",()=>hatch.remove());
-  layer.on("add",()=>{
-   if(element.parentNode&&!hatch.parentNode){
-    element.parentNode.insertBefore(hatch,element);
-   }
-  });
- });
 
  const popup=
   "<b>Potenziale convettivo "+cls+"</b><br>"+
@@ -182,42 +321,60 @@ function drawFeature(feature){
   "PWAT medio di classe: "+
   (p.pwat_mean_kg_m2??"N/D")+" kg/m²<br>"+
   "Indice sperimentale non calibrato";
+
  polygon.bindPopup(popup);
 
  const lat=Number(p.label_lat);
  const lon=Number(p.label_lon);
- if(Number.isFinite(lat)&&Number.isFinite(lon)){
+
+ if(
+  p.label_lat!==null&&p.label_lat!==undefined&&
+  p.label_lon!==null&&p.label_lon!==undefined&&
+  Number.isFinite(lat)&&Number.isFinite(lon)
+ ){
   L.marker([lat,lon],{
-   pane:"letters",interactive:false,
+   pane:"letters",
+   interactive:false,
    icon:L.divIcon({
     className:"sib-label",
-    html:'<span style="color:'+color+'">'+cls+'</span>',
-    iconSize:[34,34],
-    iconAnchor:[17,17]
+    html:
+     '<span style="color:'+color+'">'+
+     cls+"</span>",
+    iconSize:[38,38],
+    iconAnchor:[19,19]
    })
   }).addTo(labelLayer);
  }
 
  if(cls==="D")return;
 
- const outline=L.geoJSON(feature,{
-  pane:"waves",interactive:false,
+ L.geoJSON(feature,{
+  pane:"waves",
+  interactive:false,
   style:{
-   color,weight:9,opacity:.11,
-   fill:false,lineJoin:"round"
+   color:color,
+   weight:9,
+   opacity:0.11,
+   fill:false,
+   lineJoin:"round"
   }
  }).addTo(waveLayer);
 
  if(!reduced){
   const pulse=L.geoJSON(feature,{
-   pane:"waves",interactive:false,
+   pane:"waves",
+   interactive:false,
    style:{
-    color,weight:3,opacity:0,
-    fill:false,lineJoin:"round"
+    color:color,
+    weight:3,
+    opacity:0,
+    fill:false,
+    lineJoin:"round"
    }
   }).addTo(waveLayer);
+
   waves.push({
-   pulse,outline,
+   pulse:pulse,
    phase:(waves.length%3)/3
   });
  }
@@ -226,7 +383,7 @@ function drawFeature(feature){
 function animate(t){
  for(const w of waves){
   const p=(t/3600+w.phase)%1;
-  const opacity=.58*Math.pow(1-p,1.4);
+  const opacity=0.58*Math.pow(1-p,1.4);
   const weight=2+5*p;
   w.pulse.setStyle({opacity,weight});
  }
@@ -236,8 +393,10 @@ function animate(t){
 function localTime(value){
  return new Date(value).toLocaleString("it-IT",{
   timeZone:"Europe/Rome",
-  day:"2-digit",month:"2-digit",
-  hour:"2-digit",minute:"2-digit"
+  day:"2-digit",
+  month:"2-digit",
+  hour:"2-digit",
+  minute:"2-digit"
  });
 }
 
@@ -245,6 +404,7 @@ async function load(){
  const id=++requestId;
  const h=horizon;
  clear();
+
  status.textContent="CARICAMENTO GFS +"+h+" ORE";
 
  try{
@@ -252,27 +412,31 @@ async function load(){
    "data/forecast/"+h+"h.geojson?t="+Date.now(),
    {cache:"no-store"}
   );
+
   if(!response.ok){
    throw Error("HTTP "+response.status);
   }
+
   const data=await response.json();
   if(id!==requestId)return;
+
   const m=data.metadata||{};
 
   if(
    data.type!=="FeatureCollection"||
    m.status!=="ready"||
-   m.horizon_hours!==h||
+   Number(m.horizon_hours)!==h||
    m.probability_calibrated!==false||
    m.land_mask!==true||
    m.geometry_type!=="merged_land_clipped_polygons"||
    !Array.isArray(data.features)
   ){
-   throw Error("Attesa nuova mappa terrestre");
+   throw Error("Dati terrestri non disponibili");
   }
 
   const generated=Date.parse(m.generated_at);
   const valid=Date.parse(m.forecast_valid_at);
+
   if(
    !Number.isFinite(generated)||
    !Number.isFinite(valid)||
@@ -283,17 +447,21 @@ async function load(){
    throw Error("Dati scaduti");
   }
 
+  let count=0;
+
   for(const feature of data.features){
-   if(!feature.geometry)continue;
+   if(!feature||!feature.geometry)continue;
    if(!["Polygon","MultiPolygon"].includes(
     feature.geometry.type
    ))continue;
+
    drawFeature(feature);
+   count++;
   }
 
   status.textContent=
    "GFS SPERIMENTALE · "+
-   data.features.length+
+   count+
    " AREE TERRESTRI · VALIDO "+
    localTime(m.forecast_valid_at)+
    " · NON CALIBRATO";
@@ -301,31 +469,40 @@ async function load(){
   if(waves.length&&!reduced){
    animation=requestAnimationFrame(animate);
   }
+
  }catch(error){
   if(id!==requestId)return;
+
   clear();
   status.textContent=
    "DATI GFS NON DISPONIBILI · "+error.message;
+
   console.error("SIBILLA:",error);
  }
 }
 
-document.querySelectorAll(".tabs button").forEach(button=>{
- button.onclick=()=>{
-  horizon=Number(button.dataset.h);
-  document.querySelectorAll(".tabs button").forEach(
-   item=>item.classList.remove("active")
-  );
-  button.classList.add("active");
-  load();
- };
-});
+document.querySelectorAll(".tabs button").forEach(
+ button=>{
+  button.onclick=()=>{
+   horizon=Number(button.dataset.h);
+
+   document.querySelectorAll(".tabs button").forEach(
+    item=>item.classList.remove("active")
+   );
+
+   button.classList.add("active");
+   load();
+  };
+ }
+);
 
 document.getElementById("toggle").onclick=()=>{
- document.getElementById("legend").classList.toggle("closed");
+ document.getElementById("legend")
+  .classList.toggle("closed");
 };
 
 load();
+
 })();
 </script>
 </body>
