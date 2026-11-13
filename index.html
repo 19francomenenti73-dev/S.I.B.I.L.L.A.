@@ -10,15 +10,14 @@
 <style>
 *{box-sizing:border-box}
 html,body{
- margin:0;width:100%;height:100%;
- overflow:hidden;background:#081426;
- color:white;font-family:Arial,sans-serif
+ margin:0;width:100%;height:100%;overflow:hidden;
+ background:#081426;color:white;font-family:Arial,sans-serif
 }
 #map{position:absolute;inset:0;background:#d5dce2}
 header{
- position:absolute;z-index:1000;top:8px;
- left:50%;transform:translateX(-50%);
- width:min(96%,650px);pointer-events:none
+ position:absolute;z-index:1000;top:8px;left:50%;
+ transform:translateX(-50%);width:min(96%,650px);
+ pointer-events:none
 }
 .brand{
  text-align:center;font-size:clamp(23px,4vw,32px);
@@ -32,8 +31,8 @@ header{
 }
 @keyframes smoke{to{background-position:300% 0}}
 .subtitle{
- text-align:center;font-size:10px;
- letter-spacing:1.5px;text-shadow:0 1px 5px #000
+ text-align:center;font-size:10px;letter-spacing:1.5px;
+ text-shadow:0 1px 5px #000
 }
 .tabs{
  display:flex;gap:5px;margin-top:12px;padding:5px;
@@ -41,9 +40,9 @@ header{
  border-radius:13px;pointer-events:auto
 }
 .tabs button{
- flex:1;padding:12px 3px;border:0;
- border-radius:9px;background:transparent;
- color:#c1d3e7;font-weight:bold;font-size:13px
+ flex:1;padding:12px 3px;border:0;border-radius:9px;
+ background:transparent;color:#c1d3e7;
+ font-weight:bold;font-size:13px
 }
 .tabs button.active{
  background:linear-gradient(110deg,#086fd5,#852bd1);
@@ -77,9 +76,8 @@ header{
  line-height:1.5;display:block;margin-top:4px
 }
 .note{
- border-top:1px solid #ffffff55;
- padding-top:12px;font-size:11px;
- line-height:1.6;color:#c2d3e8
+ border-top:1px solid #ffffff55;padding-top:12px;
+ font-size:11px;line-height:1.6;color:#c2d3e8
 }
 .toggle{display:none}
 .status{
@@ -91,16 +89,15 @@ header{
  pointer-events:none;max-width:85%
 }
 .sib-label{
- background:transparent!important;
- border:0!important;
- font-weight:900;font-size:30px;
- line-height:34px;text-align:center;
- opacity:1!important;
- -webkit-text-stroke:1.4px #06101d;
- text-shadow:
-  1px 2px 0 #06101d,
-  -1px -1px 0 #06101d,
-  0 0 6px #000;
+ background:transparent!important;border:0!important;
+ text-align:center;pointer-events:none;
+ opacity:1!important
+}
+.sib-label span{
+ display:block;font-weight:900;font-size:28px;
+ line-height:36px;opacity:1;
+ -webkit-text-stroke:1.3px #06101d;
+ text-shadow:0 1px 3px #000,0 0 5px #000
 }
 .leaflet-popup-content-wrapper{
  background:#08172b;color:white;
@@ -114,16 +111,14 @@ header{
  .tabs{margin-top:8px}
  .legend{
   top:auto;bottom:54px;right:8px;
-  width:min(270px,76vw);max-height:55vh;
-  padding:12px
+  width:min(270px,76vw);max-height:55vh;padding:12px
  }
  .legend.closed{display:none}
  .toggle{
-  display:block;position:absolute;
-  z-index:1000;right:8px;bottom:12px;
-  padding:10px 14px;background:#08182e;
-  color:white;border:1px solid #9db4ce;
-  border-radius:10px
+  display:block;position:absolute;z-index:1000;
+  right:8px;bottom:12px;padding:10px 14px;
+  background:#08182e;color:white;
+  border:1px solid #9db4ce;border-radius:10px
  }
  .status{
   left:8px;bottom:10px;transform:none;
@@ -139,9 +134,7 @@ header{
 <div id="map"></div>
 <header>
 <div class="brand">S.I.B.I.L.L.A.</div>
-<div class="subtitle">
-INDICE DI PROBABILITÀ CONVETTIVA
-</div>
+<div class="subtitle">INDICE DI PROBABILITÀ CONVETTIVA</div>
 <nav class="tabs">
 <button class="active" data-h="3">3 ORE</button>
 <button data-h="24">24 ORE</button>
@@ -149,262 +142,237 @@ INDICE DI PROBABILITÀ CONVETTIVA
 <button data-h="72">72 ORE</button>
 </nav>
 </header>
-
 <aside class="legend closed" id="legend">
 <h2>Potenziale convettivo</h2>
-<div class="item">
-<span class="letter a">A</span>
-<div><strong>Elevato</strong>
-<small>Condizioni molto favorevoli alla convezione intensa</small>
-</div></div>
-<div class="item">
-<span class="letter b">B</span>
-<div><strong>Moderato</strong>
-<small>Condizioni favorevoli alla convezione organizzata</small>
-</div></div>
-<div class="item">
-<span class="letter c">C</span>
-<div><strong>Basso</strong>
-<small>Convezione possibile, generalmente meno organizzata</small>
-</div></div>
-<div class="item">
-<span class="letter d">D</span>
-<div><strong>Non significativo</strong>
-<small>Segnale convettivo debole o assente</small>
-</div></div>
-<div class="note">
-Dati NOAA GFS. Indice sperimentale non calibrato.
-Visualizzazione limitata alle terre emerse con
-confini Natural Earth. Il ritaglio geografico
-non aumenta la precisione meteorologica.
-</div>
+<div class="item"><span class="letter a">A</span><div><strong>Elevato</strong><small>Condizioni molto favorevoli alla convezione intensa</small></div></div>
+<div class="item"><span class="letter b">B</span><div><strong>Moderato</strong><small>Condizioni favorevoli alla convezione organizzata</small></div></div>
+<div class="item"><span class="letter c">C</span><div><strong>Basso</strong><small>Convezione possibile, generalmente meno organizzata</small></div></div>
+<div class="item"><span class="letter d">D</span><div><strong>Non significativo</strong><small>Segnale convettivo debole o assente</small></div></div>
+<div class="note">Dati NOAA GFS. Indice sperimentale non calibrato. Aree limitate alle terre emerse. Il ritaglio geografico non aumenta la risoluzione meteorologica.</div>
 </aside>
-
 <button class="toggle" id="toggle">Legenda</button>
 <div class="status" id="status">CARICAMENTO GFS...</div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (()=>{
 "use strict";
 
 const map=L.map("map",{
- center:[42.2,12.5],
- zoom:5,minZoom:3,maxZoom:12,
- preferCanvas:false,
- zoomControl:false
+ center:[42.2,12.5],zoom:5,minZoom:3,maxZoom:12,
+ preferCanvas:false,zoomControl:false
 });
 L.control.zoom({position:"bottomleft"}).addTo(map);
 L.tileLayer(
  "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
- {
-  maxZoom:17,
-  attribution:"© OpenTopoMap · © OpenStreetMap"
- }
+ {maxZoom:17,attribution:"© OpenTopoMap · © OpenStreetMap"}
 ).addTo(map);
 
-map.createPane("waves");
-map.getPane("waves").style.zIndex=410;
-map.createPane("areas");
-map.getPane("areas").style.zIndex=430;
-map.createPane("letters");
-map.getPane("letters").style.zIndex=450;
+for(const [name,z] of [
+ ["areas",430],["waves",440],["letters",450]
+]){
+ map.createPane(name);
+ map.getPane(name).style.zIndex=z;
+}
 
-const waveLayer=L.layerGroup().addTo(map);
-const areaLayer=L.layerGroup().addTo(map);
-const labelLayer=L.layerGroup().addTo(map);
-
+const areas=L.layerGroup().addTo(map);
+const wavesLayer=L.layerGroup().addTo(map);
+const labels=L.layerGroup().addTo(map);
 const colors={
- A:"#e23fff",
- B:"#388dff",
- C:"#00edfa",
- D:"#d0d8e4"
+ A:"#e23fff",B:"#388dff",
+ C:"#00edfa",D:"#d0d8e4"
 };
-
+const rank={A:0,B:1,C:2,D:3};
 const status=document.getElementById("status");
 const reduced=window.matchMedia(
  "(prefers-reduced-motion: reduce)"
 ).matches;
 
-let horizon=3;
-let requestId=0;
-let animation=0;
-let waves=[];
+let horizon=3,requestId=0,frame=0;
+let pulses=[],items=[];
 
-/* Renderer SVG inizializzato esplicitamente.
-   Non utilizziamo getRenderer su layer non aggiunti. */
-const areaRenderer=L.svg({
- pane:"areas",
- padding:0.5
-}).addTo(map);
-
-const svgNS="http://www.w3.org/2000/svg";
-const patterns={};
-
-/* I pattern vengono creati solo dopo che
-   Leaflet ha inizializzato il renderer SVG. */
-function createPatterns(){
- const container=areaRenderer._container;
- if(!container)return;
-
- const defs=document.createElementNS(svgNS,"defs");
- container.insertBefore(defs,container.firstChild);
-
- for(const [cls,color] of Object.entries(colors)){
-  const id="sib-hatch-"+cls;
-  const pattern=document.createElementNS(svgNS,"pattern");
-
-  pattern.setAttribute("id",id);
-  pattern.setAttribute("patternUnits","userSpaceOnUse");
-  pattern.setAttribute("width","10");
-  pattern.setAttribute("height","10");
-  pattern.setAttribute("patternTransform","rotate(45)");
-
-  const background=document.createElementNS(svgNS,"rect");
-  background.setAttribute("width","10");
-  background.setAttribute("height","10");
-  background.setAttribute("fill",color);
-  background.setAttribute("fill-opacity","0.10");
-  pattern.appendChild(background);
-
-  const line=document.createElementNS(svgNS,"path");
-  line.setAttribute("d","M 0 0 V 10");
-  line.setAttribute("stroke",color);
-  line.setAttribute("stroke-width","1.2");
-  line.setAttribute("stroke-opacity","0.70");
-  pattern.appendChild(line);
-
-  defs.appendChild(pattern);
-  patterns[cls]="url(#"+id+")";
- }
-}
-createPatterns();
- 
 function clear(){
- cancelAnimationFrame(animation);
- waveLayer.clearLayers();
- areaLayer.clearLayers();
- labelLayer.clearLayers();
- waves=[];
+ cancelAnimationFrame(frame);
+ areas.clearLayers();
+ wavesLayer.clearLayers();
+ labels.clearLayers();
+ pulses=[];
+ items=[];
 }
 
-function drawFeature(feature){
+function safe(value){
+ return String(value??"N/D").replace(
+  /[&<>"']/g,
+  c=>({
+   "&":"&amp;","<":"&lt;",">":"&gt;",
+   '"':"&quot;","'":"&#39;"
+  })[c]
+ );
+}
+
+/* Verifica che un punto appartenga al poligono.
+   Tiene conto anche dei fori e dei multipoligoni. */
+function inRing(point,ring){
+ let inside=false;
+ const x=point[0],y=point[1];
+ for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+  const a=ring[i],b=ring[j];
+  if((a[1]>y)!==(b[1]>y)){
+   const cross=(b[0]-a[0])*(y-a[1])/
+    (b[1]-a[1])+a[0];
+   if(x<cross)inside=!inside;
+  }
+ }
+ return inside;
+}
+function inPolygon(point,rings){
+ if(!rings.length||!inRing(point,rings[0]))return false;
+ for(let i=1;i<rings.length;i++){
+  if(inRing(point,rings[i]))return false;
+ }
+ return true;
+}
+function contains(geometry,lat,lon){
+ if(!geometry)return false;
+ const point=[lon,lat];
+ if(geometry.type==="Polygon"){
+  return inPolygon(point,geometry.coordinates);
+ }
+ if(geometry.type==="MultiPolygon"){
+  return geometry.coordinates.some(
+   polygon=>inPolygon(point,polygon)
+  );
+ }
+ return false;
+}
+
+function drawArea(feature){
  const p=feature.properties||{};
  const cls=p.class;
  if(!Object.prototype.hasOwnProperty.call(colors,cls)){
-  return;
+  return null;
  }
  const color=colors[cls];
 
- /* Il tratteggio è il riempimento SVG stesso.
-    Non cloniamo i path: Leaflet continua a gestire
-    zoom, spostamenti e aggiornamenti geometrici. */
  const polygon=L.geoJSON(feature,{
   pane:"areas",
-  renderer:areaRenderer,
   style:{
-   color:color,
-   weight:3,
-   opacity:1,
-   fillColor:patterns[cls]||color,
-   fillOpacity:1,
+   color,weight:2.4,opacity:0.94,
+   fillColor:color,fillOpacity:0.17,
    lineJoin:"round"
   }
- }).addTo(areaLayer);
+ }).addTo(areas);
 
- const popup=
-  "<b>Potenziale convettivo "+cls+"</b><br>"+
-  "CAPE medio di classe: "+
-  (p.cape_mean_j_kg??"N/D")+" J/kg<br>"+
-  "CIN medio di classe: "+
-  (p.cin_mean_j_kg??"N/D")+" J/kg<br>"+
-  "PWAT medio di classe: "+
-  (p.pwat_mean_kg_m2??"N/D")+" kg/m²<br>"+
-  "Indice sperimentale non calibrato";
+ polygon.bindPopup(
+  "<b>Potenziale convettivo "+safe(cls)+"</b><br>"+
+  "CAPE medio della classe: "+
+  safe(p.cape_mean_j_kg)+" J/kg<br>"+
+  "CIN medio della classe: "+
+  safe(p.cin_mean_j_kg)+" J/kg<br>"+
+  "PWAT medio della classe: "+
+  safe(p.pwat_mean_kg_m2)+" kg/m²<br>"+
+  "Valori aggregati per classe, non per singola area.<br>"+
+  "Indice sperimentale non calibrato."
+ );
 
- polygon.bindPopup(popup);
+ if(cls!=="D"){
+  L.geoJSON(feature,{
+   pane:"waves",interactive:false,
+   style:{
+    color,weight:6,opacity:0.08,
+    fill:false,lineJoin:"round"
+   }
+  }).addTo(wavesLayer);
 
- const lat=Number(p.label_lat);
- const lon=Number(p.label_lon);
-
- if(
-  p.label_lat!==null&&p.label_lat!==undefined&&
-  p.label_lon!==null&&p.label_lon!==undefined&&
-  Number.isFinite(lat)&&Number.isFinite(lon)
- ){
-  L.marker([lat,lon],{
-   pane:"letters",
-   interactive:false,
-   icon:L.divIcon({
-    className:"sib-label",
-    html:
-     '<span style="color:'+color+'">'+
-     cls+"</span>",
-    iconSize:[38,38],
-    iconAnchor:[19,19]
-   })
-  }).addTo(labelLayer);
+  if(!reduced){
+   const pulse=L.geoJSON(feature,{
+    pane:"waves",interactive:false,
+    style:{
+     color,weight:2,opacity:0,
+     fill:false,lineJoin:"round"
+    }
+   }).addTo(wavesLayer);
+   pulses.push({pulse,phase:(pulses.length%3)/3});
+  }
  }
 
- if(cls==="D")return;
+ return {feature,cls,color,polygon};
+}
 
- L.geoJSON(feature,{
-  pane:"waves",
-  interactive:false,
-  style:{
-   color:color,
-   weight:9,
-   opacity:0.11,
-   fill:false,
-   lineJoin:"round"
-  }
- }).addTo(waveLayer);
+function drawLabels(){
+ labels.clearLayers();
+ const placed=[];
+ const sorted=[...items].sort(
+  (a,b)=>rank[a.cls]-rank[b.cls]
+ );
 
- if(!reduced){
-  const pulse=L.geoJSON(feature,{
-   pane:"waves",
-   interactive:false,
-   style:{
-    color:color,
-    weight:3,
-    opacity:0,
-    fill:false,
-    lineJoin:"round"
+ for(const item of sorted){
+  const p=item.feature.properties||{};
+  const lat=Number(p.label_lat);
+  const lon=Number(p.label_lon);
+  if(p.label_lat==null||p.label_lon==null||
+   !Number.isFinite(lat)||!Number.isFinite(lon))continue;
+
+  const geometry=item.feature.geometry;
+  if(!contains(geometry,lat,lon))continue;
+
+  const origin=map.latLngToContainerPoint([lat,lon]);
+  const candidates=[[0,0]];
+  for(const radius of [20,40,60,80]){
+   for(let a=0;a<8;a++){
+    const angle=a*Math.PI/4;
+    candidates.push([
+     Math.cos(angle)*radius,
+     Math.sin(angle)*radius
+    ]);
    }
-  }).addTo(waveLayer);
+  }
 
-  waves.push({
-   pulse:pulse,
-   phase:(waves.length%3)/3
-  });
+  let chosen=null;
+  for(const [dx,dy] of candidates){
+   const pt=L.point(origin.x+dx,origin.y+dy);
+   const ll=map.containerPointToLatLng(pt);
+   if(!contains(geometry,ll.lat,ll.lng))continue;
+   if(placed.some(q=>q.distanceTo(pt)<39))continue;
+   chosen={pt,ll};
+   break;
+  }
+  if(!chosen)continue;
+
+  placed.push(chosen.pt);
+  L.marker(chosen.ll,{
+   pane:"letters",interactive:false,
+   icon:L.divIcon({
+    className:"sib-label",
+    html:'<span style="color:'+item.color+'">'+
+     item.cls+"</span>",
+    iconSize:[38,38],iconAnchor:[19,19]
+   })
+  }).addTo(labels);
  }
 }
 
 function animate(t){
- for(const w of waves){
-  const p=(t/3600+w.phase)%1;
-  const opacity=0.58*Math.pow(1-p,1.4);
-  const weight=2+5*p;
-  w.pulse.setStyle({opacity,weight});
+ for(const w of pulses){
+  const phase=(t/3600+w.phase)%1;
+  w.pulse.setStyle({
+   opacity:0.42*Math.pow(1-phase,1.4),
+   weight:2+3*phase
+  });
  }
- animation=requestAnimationFrame(animate);
+ frame=requestAnimationFrame(animate);
 }
 
 function localTime(value){
  return new Date(value).toLocaleString("it-IT",{
   timeZone:"Europe/Rome",
-  day:"2-digit",
-  month:"2-digit",
-  hour:"2-digit",
-  minute:"2-digit"
+  day:"2-digit",month:"2-digit",
+  hour:"2-digit",minute:"2-digit"
  });
 }
 
 async function load(){
- const id=++requestId;
- const h=horizon;
+ const id=++requestId,h=horizon;
  clear();
-
  status.textContent="CARICAMENTO GFS +"+h+" ORE";
 
  try{
@@ -412,14 +380,10 @@ async function load(){
    "data/forecast/"+h+"h.geojson?t="+Date.now(),
    {cache:"no-store"}
   );
-
-  if(!response.ok){
-   throw Error("HTTP "+response.status);
-  }
+  if(!response.ok)throw Error("HTTP "+response.status);
 
   const data=await response.json();
   if(id!==requestId)return;
-
   const m=data.metadata||{};
 
   if(
@@ -436,7 +400,6 @@ async function load(){
 
   const generated=Date.parse(m.generated_at);
   const valid=Date.parse(m.forecast_valid_at);
-
   if(
    !Number.isFinite(generated)||
    !Number.isFinite(valid)||
@@ -447,62 +410,55 @@ async function load(){
    throw Error("Dati scaduti");
   }
 
-  let count=0;
-
   for(const feature of data.features){
    if(!feature||!feature.geometry)continue;
    if(!["Polygon","MultiPolygon"].includes(
     feature.geometry.type
    ))continue;
-
-   drawFeature(feature);
-   count++;
+   const item=drawArea(feature);
+   if(item)items.push(item);
   }
 
+  drawLabels();
   status.textContent=
-   "GFS SPERIMENTALE · "+
-   count+
+   "GFS SPERIMENTALE · "+items.length+
    " AREE TERRESTRI · VALIDO "+
    localTime(m.forecast_valid_at)+
    " · NON CALIBRATO";
 
-  if(waves.length&&!reduced){
-   animation=requestAnimationFrame(animate);
+  if(pulses.length&&!reduced){
+   frame=requestAnimationFrame(animate);
   }
-
  }catch(error){
   if(id!==requestId)return;
-
   clear();
   status.textContent=
    "DATI GFS NON DISPONIBILI · "+error.message;
-
   console.error("SIBILLA:",error);
  }
 }
 
-document.querySelectorAll(".tabs button").forEach(
- button=>{
-  button.onclick=()=>{
-   horizon=Number(button.dataset.h);
-
-   document.querySelectorAll(".tabs button").forEach(
-    item=>item.classList.remove("active")
-   );
-
-   button.classList.add("active");
-   load();
-  };
- }
-);
+document.querySelectorAll(".tabs button").forEach(button=>{
+ button.onclick=()=>{
+  horizon=Number(button.dataset.h);
+  document.querySelectorAll(".tabs button").forEach(
+   b=>b.classList.remove("active")
+  );
+  button.classList.add("active");
+  load();
+ };
+});
 
 document.getElementById("toggle").onclick=()=>{
  document.getElementById("legend")
   .classList.toggle("closed");
 };
 
-load();
+map.on("zoomend moveend",()=>{
+ if(items.length)drawLabels();
+});
 
+load();
 })();
 </script>
 </body>
