@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -24,13 +25,13 @@ header{position:absolute;z-index:1000;top:8px;left:50%;transform:translateX(-50%
 .a{color:#e23fff;background:#a41ad333}
 .b{color:#388dff;background:#2867e933}
 .c{color:#00edfa;background:#00adbd33}
-.d{color:#9daabc;background:#8491a033}
+.d{color:#d0d8e4;background:#8491a033}
 .item strong{font-size:13px;display:block}
 .item small{font-size:11px;color:#c6d5e7;line-height:1.5;display:block;margin-top:4px}
 .note{border-top:1px solid #ffffff55;padding-top:12px;font-size:11px;line-height:1.6;color:#c2d3e8}
 .toggle{display:none}
 .status{position:absolute;z-index:850;bottom:26px;left:50%;transform:translateX(-50%);padding:8px 12px;background:#07172ae9;border:1px solid #8ba0b9;border-radius:9px;font-size:10px;text-align:center;pointer-events:none;max-width:85%}
-.sib-label{font-weight:900;font-size:23px;color:white;text-shadow:0 0 7px #000,0 0 12px #000;text-align:center}
+.sib-label{background:transparent!important;border:0!important;font-weight:900;font-size:27px;line-height:30px;text-align:center;opacity:1!important;-webkit-text-stroke:1.3px #07101c;paint-order:stroke fill;text-shadow:1px 2px 0 #07101c,-1px -1px 0 #07101c,0 0 5px #000}
 .leaflet-popup-content-wrapper{background:#08172b;color:white;border:1px solid #7392b5}
 .leaflet-popup-tip{background:#08172b}
 .leaflet-popup-close-button{color:white!important}
@@ -92,7 +93,7 @@ const areaLayer=L.layerGroup().addTo(map);
 const labelLayer=L.layerGroup().addTo(map);
 const colors={
  A:"#e23fff",B:"#388dff",
- C:"#00edfa",D:"#9daabc"
+ C:"#00edfa",D:"#d0d8e4"
 };
 const status=document.getElementById("status");
 const reduced=window.matchMedia(
@@ -103,6 +104,33 @@ let requestId=0;
 let animation=0;
 let waves=[];
 
+/* Tratteggio SVG: righe diagonali di 1 px ogni 9 px.
+   Il pattern e' applicato solo all'interno dei poligoni. */
+const svgNS="http://www.w3.org/2000/svg";
+const defs=document.createElementNS(svgNS,"defs");
+map.getRenderer(L.polygon([[0,0],[0,1],[1,1]])).getContainer().appendChild(defs);
+const patterns={};
+for(const [cls,color] of Object.entries(colors)){
+ const pattern=document.createElementNS(svgNS,"pattern");
+ const id="sib-hatch-"+cls;
+ pattern.setAttribute("id",id);
+ pattern.setAttribute("patternUnits","userSpaceOnUse");
+ pattern.setAttribute("width","9");
+ pattern.setAttribute("height","9");
+ pattern.setAttribute("patternTransform","rotate(45)");
+ const line=document.createElementNS(svgNS,"line");
+ line.setAttribute("x1","0");
+ line.setAttribute("y1","0");
+ line.setAttribute("x2","0");
+ line.setAttribute("y2","9");
+ line.setAttribute("stroke",color);
+ line.setAttribute("stroke-width","1");
+ line.setAttribute("stroke-opacity","0.65");
+ pattern.appendChild(line);
+ defs.appendChild(pattern);
+ patterns[cls]="url(#"+id+")";
+}
+
 function clear(){
  cancelAnimationFrame(animation);
  waveLayer.clearLayers();
@@ -110,21 +138,40 @@ function clear(){
  labelLayer.clearLayers();
  waves=[];
 }
-
+ 
 function drawFeature(feature){
  const p=feature.properties||{};
  const cls=p.class;
  if(!colors[cls])return;
  const color=colors[cls];
+
  const polygon=L.geoJSON(feature,{
   pane:"areas",
   style:{
    color,weight:3,opacity:1,
    fillColor:color,
-   fillOpacity:cls==="D"?.10:.24,
+   fillOpacity:cls==="D"?.07:.10,
    lineJoin:"round"
   }
  }).addTo(areaLayer);
+
+ polygon.eachLayer(layer=>{
+  if(!(layer instanceof L.Path))return;
+  const element=layer.getElement();
+  if(!element)return;
+  const hatch=element.cloneNode(false);
+  hatch.setAttribute("fill",patterns[cls]);
+  hatch.setAttribute("fill-opacity","1");
+  hatch.setAttribute("stroke","none");
+  hatch.setAttribute("pointer-events","none");
+  element.parentNode.insertBefore(hatch,element);
+  layer.on("remove",()=>hatch.remove());
+  layer.on("add",()=>{
+   if(element.parentNode&&!hatch.parentNode){
+    element.parentNode.insertBefore(hatch,element);
+   }
+  });
+ });
 
  const popup=
   "<b>Potenziale convettivo "+cls+"</b><br>"+
@@ -144,9 +191,9 @@ function drawFeature(feature){
    pane:"letters",interactive:false,
    icon:L.divIcon({
     className:"sib-label",
-    html:cls,
-    iconSize:[30,30],
-    iconAnchor:[15,15]
+    html:'<span style="color:'+color+'">'+cls+'</span>',
+    iconSize:[34,34],
+    iconAnchor:[17,17]
    })
   }).addTo(labelLayer);
  }
