@@ -63,7 +63,7 @@ header{position:absolute;z-index:1000;top:8px;left:50%;transform:translateX(-50%
 <div class="item"><span class="letter b">B</span><div><strong>Moderato</strong><small>Condizioni favorevoli alla convezione organizzata</small></div></div>
 <div class="item"><span class="letter c">C</span><div><strong>Basso</strong><small>Convezione possibile, generalmente meno organizzata</small></div></div>
 <div class="item"><span class="letter d">D</span><div><strong>Non significativo</strong><small>Segnale convettivo debole o assente</small></div></div>
-<div class="note">Dati NOAA GFS. Indice sperimentale non calibrato. Le aree sono aggregate sulla griglia originale: i confini non rappresentano osservazioni puntuali.</div>
+<div class="note">Dati NOAA GFS. Indice sperimentale non calibrato. Visualizzazione limitata alle terre emerse con confini Natural Earth. Il ritaglio geografico non aumenta la precisione meteorologica.</div>
 </aside>
 <button class="toggle" id="toggle">Legenda</button>
 <div class="status" id="status">CARICAMENTO GFS...</div>
@@ -71,221 +71,213 @@ header{position:absolute;z-index:1000;top:8px;left:50%;transform:translateX(-50%
 <script>
 (()=>{
 "use strict";
-const map=L.map("map",{center:[42.2,12.5],zoom:5,minZoom:3,maxZoom:12,preferCanvas:false,zoomControl:false});
+const map=L.map("map",{
+ center:[42.2,12.5],zoom:5,minZoom:3,maxZoom:12,
+ preferCanvas:false,zoomControl:false
+});
 L.control.zoom({position:"bottomleft"}).addTo(map);
-L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{maxZoom:17,attribution:"© OpenTopoMap · © OpenStreetMap"}).addTo(map);
-map.createPane("waves");map.getPane("waves").style.zIndex=410;
-map.createPane("areas");map.getPane("areas").style.zIndex=430;
-map.createPane("letters");map.getPane("letters").style.zIndex=450;
+L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{
+ maxZoom:17,
+ attribution:"© OpenTopoMap · © OpenStreetMap"
+}).addTo(map);
+map.createPane("waves");
+map.getPane("waves").style.zIndex=410;
+map.createPane("areas");
+map.getPane("areas").style.zIndex=430;
+map.createPane("letters");
+map.getPane("letters").style.zIndex=450;
+
 const waveLayer=L.layerGroup().addTo(map);
 const areaLayer=L.layerGroup().addTo(map);
 const labelLayer=L.layerGroup().addTo(map);
-const colors={A:"#e23fff",B:"#388dff",C:"#00edfa",D:"#9daabc"};
+const colors={
+ A:"#e23fff",B:"#388dff",
+ C:"#00edfa",D:"#9daabc"
+};
 const status=document.getElementById("status");
-const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
-let horizon=3,requestId=0,animation=0,waveItems=[];
+const reduced=window.matchMedia(
+ "(prefers-reduced-motion: reduce)"
+).matches;
+let horizon=3;
+let requestId=0;
+let animation=0;
+let waves=[];
 
-function key(x,y){return x+","+y}
-function connected(cells){
- const remaining=new Map(cells.map(c=>[key(c.x,c.y),c]));
- const groups=[];
- while(remaining.size){
-  const first=remaining.values().next().value;
-  const queue=[first],group=[];
-  remaining.delete(key(first.x,first.y));
-  for(let i=0;i<queue.length;i++){
-   const c=queue[i];group.push(c);
-   for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
-    const k=key(c.x+dx,c.y+dy);
-    if(remaining.has(k)){
-     queue.push(remaining.get(k));remaining.delete(k);
-    }
-   }
+function clear(){
+ cancelAnimationFrame(animation);
+ waveLayer.clearLayers();
+ areaLayer.clearLayers();
+ labelLayer.clearLayers();
+ waves=[];
+}
+
+function drawFeature(feature){
+ const p=feature.properties||{};
+ const cls=p.class;
+ if(!colors[cls])return;
+ const color=colors[cls];
+ const polygon=L.geoJSON(feature,{
+  pane:"areas",
+  style:{
+   color,weight:3,opacity:1,
+   fillColor:color,
+   fillOpacity:cls==="D"?.10:.24,
+   lineJoin:"round"
   }
-  groups.push(group);
- }
- return groups;
-}
-function edgesFor(group){
- const edges=new Map();
- function edge(a,b){
-  const id=key(...a)+"|"+key(...b);
-  const reverse=key(...b)+"|"+key(...a);
-  if(edges.has(reverse))edges.delete(reverse);
-  else edges.set(id,{a,b});
- }
- for(const {x,y} of group){
-  edge([x,y],[x+1,y]);
-  edge([x+1,y],[x+1,y+1]);
-  edge([x+1,y+1],[x,y+1]);
-  edge([x,y+1],[x,y]);
- }
- return edges;
-}
-function boundary(group){
- const edges=edgesFor(group);
- const starts=new Map();
- for(const [id,e] of edges){
-  const k=key(...e.a);
-  if(!starts.has(k))starts.set(k,[]);
-  starts.get(k).push({id,...e});
- }
- const loops=[];
- while(edges.size){
-  const first=edges.entries().next().value;
-  const start=first[1].a;
-  let current=first[1],loop=[start],steps=0;
-  while(current&&steps++<100000){
-   edges.delete(current.id);
-   loop.push(current.b);
-   if(key(...current.b)===key(...start))break;
-   const choices=(starts.get(key(...current.b))||[])
-    .filter(e=>edges.has(e.id));
-   current=choices[0]||null;
-  }
-  if(loop.length>=4&&key(...loop.at(-1))===key(...start)){
-   loops.push(loop.map(p=>[p[1],p[0]]));
-  }
- }
- return loops;
-}
-function signedArea(ring){
- let s=0;
- for(let i=0;i<ring.length-1;i++){
-  const a=ring[i],b=ring[i+1];
-  s+=a[1]*b[0]-b[1]*a[0];
- }
- return s/2;
-}
-function buildAreas(features){
- const classes={A:[],B:[],C:[],D:[]};
- for(const f of features){
-  if(f.geometry?.type!=="Polygon")continue;
-  const cls=f.properties?.class;
-  if(!classes[cls])continue;
-  const ring=f.geometry.coordinates?.[0];
-  if(!ring||ring.length!==5)continue;
-  const xs=ring.map(p=>p[0]),ys=ring.map(p=>p[1]);
-  if(!xs.every(Number.isFinite)||!ys.every(Number.isFinite))continue;
-  const x=Math.min(...xs),y=Math.min(...ys);
-  if(Math.abs(Math.max(...xs)-x-1)>0.001||
-     Math.abs(Math.max(...ys)-y-1)>0.001)continue;
-  classes[cls].push({x,y,p:f.properties});
- }
- const result=[];
- for(const [cls,cells] of Object.entries(classes)){
-  for(const group of connected(cells)){
-   const rings=boundary(group);
-   if(!rings.length)continue;
-   rings.sort((a,b)=>Math.abs(signedArea(b))-Math.abs(signedArea(a)));
-   result.push({cls,group,rings});
-  }
- }
- return result;
-}
-function expand(ring,pixels){
- const points=ring.slice(0,-1).map(p=>map.latLngToLayerPoint(p));
- const c=points.reduce((s,p)=>({x:s.x+p.x,y:s.y+p.y}),{x:0,y:0});
- c.x/=points.length;c.y/=points.length;
- return points.map(p=>{
-  const dx=p.x-c.x,dy=p.y-c.y,d=Math.hypot(dx,dy)||1;
-  return map.layerPointToLatLng([p.x+dx/d*pixels,p.y+dy/d*pixels]);
- });
-}
-function drawArea(area){
- const color=colors[area.cls];
- const polygon=L.polygon(area.rings,{
-  pane:"areas",color,weight:3,opacity:1,
-  fillColor:color,fillOpacity:area.cls==="D"?.10:.24,
-  lineJoin:"round"
  }).addTo(areaLayer);
- const n=area.group.length;
- const avg=(name)=>area.group.reduce((s,c)=>s+(Number(c.p[name])||0),0)/n;
- polygon.bindPopup(
-  "<b>Potenziale convettivo "+area.cls+"</b><br>"+
-  n+" celle GFS aggregate<br>"+
-  "CAPE medio: "+Math.round(avg("cape_j_kg"))+" J/kg<br>"+
-  "CIN media: "+Math.round(avg("cin_j_kg"))+" J/kg<br>"+
-  "PWAT medio: "+avg("pwat_kg_m2").toFixed(1)+" kg/m²<br>"+
-  "Indice sperimentale non calibrato"
- );
- const center=polygon.getBounds().getCenter();
- L.marker(center,{pane:"letters",interactive:false,
-  icon:L.divIcon({className:"sib-label",html:area.cls,
-   iconSize:[30,30],iconAnchor:[15,15]})
- }).addTo(labelLayer);
- if(area.cls!=="D"){
-  L.polygon(area.rings,{pane:"waves",color,weight:10,
-   opacity:.10,fill:false,interactive:false}).addTo(waveLayer);
-  if(!reduced){
-   const wave=L.polygon(area.rings[0],{
-    pane:"waves",color,weight:3,opacity:0,
-    fill:false,interactive:false
-   }).addTo(waveLayer);
-   waveItems.push({wave,ring:area.rings[0],phase:waveItems.length%2*.5});
+
+ const popup=
+  "<b>Potenziale convettivo "+cls+"</b><br>"+
+  "CAPE medio di classe: "+
+  (p.cape_mean_j_kg??"N/D")+" J/kg<br>"+
+  "CIN medio di classe: "+
+  (p.cin_mean_j_kg??"N/D")+" J/kg<br>"+
+  "PWAT medio di classe: "+
+  (p.pwat_mean_kg_m2??"N/D")+" kg/m²<br>"+
+  "Indice sperimentale non calibrato";
+ polygon.bindPopup(popup);
+
+ const lat=Number(p.label_lat);
+ const lon=Number(p.label_lon);
+ if(Number.isFinite(lat)&&Number.isFinite(lon)){
+  L.marker([lat,lon],{
+   pane:"letters",interactive:false,
+   icon:L.divIcon({
+    className:"sib-label",
+    html:cls,
+    iconSize:[30,30],
+    iconAnchor:[15,15]
+   })
+  }).addTo(labelLayer);
+ }
+
+ if(cls==="D")return;
+
+ const outline=L.geoJSON(feature,{
+  pane:"waves",interactive:false,
+  style:{
+   color,weight:9,opacity:.11,
+   fill:false,lineJoin:"round"
   }
+ }).addTo(waveLayer);
+
+ if(!reduced){
+  const pulse=L.geoJSON(feature,{
+   pane:"waves",interactive:false,
+   style:{
+    color,weight:3,opacity:0,
+    fill:false,lineJoin:"round"
+   }
+  }).addTo(waveLayer);
+  waves.push({
+   pulse,outline,
+   phase:(waves.length%3)/3
+  });
  }
 }
+
 function animate(t){
- for(const item of waveItems){
-  const p=(t/4200+item.phase)%1;
-  item.wave.setLatLngs(expand(item.ring,4+34*p));
-  item.wave.setStyle({opacity:.65*Math.pow(1-p,1.5),weight:3+5*p});
+ for(const w of waves){
+  const p=(t/3600+w.phase)%1;
+  const opacity=.58*Math.pow(1-p,1.4);
+  const weight=2+5*p;
+  w.pulse.setStyle({opacity,weight});
  }
  animation=requestAnimationFrame(animate);
 }
-function clear(){
- cancelAnimationFrame(animation);
- waveLayer.clearLayers();areaLayer.clearLayers();labelLayer.clearLayers();
- waveItems=[];
-}
-function localTime(s){
- return new Date(s).toLocaleString("it-IT",{
-  timeZone:"Europe/Rome",day:"2-digit",month:"2-digit",
+
+function localTime(value){
+ return new Date(value).toLocaleString("it-IT",{
+  timeZone:"Europe/Rome",
+  day:"2-digit",month:"2-digit",
   hour:"2-digit",minute:"2-digit"
  });
 }
+
 async function load(){
- const id=++requestId,h=horizon;
+ const id=++requestId;
+ const h=horizon;
  clear();
  status.textContent="CARICAMENTO GFS +"+h+" ORE";
+
  try{
-  const response=await fetch("data/forecast/"+h+"h.geojson?t="+Date.now(),{cache:"no-store"});
-  if(!response.ok)throw Error("HTTP "+response.status);
+  const response=await fetch(
+   "data/forecast/"+h+"h.geojson?t="+Date.now(),
+   {cache:"no-store"}
+  );
+  if(!response.ok){
+   throw Error("HTTP "+response.status);
+  }
   const data=await response.json();
   if(id!==requestId)return;
   const m=data.metadata||{};
-  if(data.type!=="FeatureCollection"||m.status!=="ready"||
-     m.horizon_hours!==h||m.probability_calibrated!==false||
-     !Array.isArray(data.features))throw Error("Prodotto non valido");
-  const generated=Date.parse(m.generated_at),valid=Date.parse(m.forecast_valid_at);
-  if(!Number.isFinite(generated)||!Number.isFinite(valid)||
-     Date.now()-generated>12*3600000||
-     generated-Date.now()>15*60000||
-     valid<Date.now())throw Error("Dati scaduti");
-  const areas=buildAreas(data.features);
-  areas.forEach(drawArea);
-  status.textContent="GFS SPERIMENTALE · "+data.features.length+
-   " CELLE → "+areas.length+" AREE · VALIDO "+
-   localTime(m.forecast_valid_at)+" · NON CALIBRATO";
-  if(waveItems.length&&!reduced)animation=requestAnimationFrame(animate);
- }catch(e){
+
+  if(
+   data.type!=="FeatureCollection"||
+   m.status!=="ready"||
+   m.horizon_hours!==h||
+   m.probability_calibrated!==false||
+   m.land_mask!==true||
+   m.geometry_type!=="merged_land_clipped_polygons"||
+   !Array.isArray(data.features)
+  ){
+   throw Error("Attesa nuova mappa terrestre");
+  }
+
+  const generated=Date.parse(m.generated_at);
+  const valid=Date.parse(m.forecast_valid_at);
+  if(
+   !Number.isFinite(generated)||
+   !Number.isFinite(valid)||
+   Date.now()-generated>12*3600000||
+   generated-Date.now()>15*60000||
+   valid<Date.now()
+  ){
+   throw Error("Dati scaduti");
+  }
+
+  for(const feature of data.features){
+   if(!feature.geometry)continue;
+   if(!["Polygon","MultiPolygon"].includes(
+    feature.geometry.type
+   ))continue;
+   drawFeature(feature);
+  }
+
+  status.textContent=
+   "GFS SPERIMENTALE · "+
+   data.features.length+
+   " AREE TERRESTRI · VALIDO "+
+   localTime(m.forecast_valid_at)+
+   " · NON CALIBRATO";
+
+  if(waves.length&&!reduced){
+   animation=requestAnimationFrame(animate);
+  }
+ }catch(error){
   if(id!==requestId)return;
-  clear();status.textContent="DATI GFS NON DISPONIBILI · "+e.message;
-  console.error("SIBILLA:",e);
+  clear();
+  status.textContent=
+   "DATI GFS NON DISPONIBILI · "+error.message;
+  console.error("SIBILLA:",error);
  }
 }
-document.querySelectorAll(".tabs button").forEach(b=>{
- b.onclick=()=>{
-  horizon=Number(b.dataset.h);
-  document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));
-  b.classList.add("active");load();
+
+document.querySelectorAll(".tabs button").forEach(button=>{
+ button.onclick=()=>{
+  horizon=Number(button.dataset.h);
+  document.querySelectorAll(".tabs button").forEach(
+   item=>item.classList.remove("active")
+  );
+  button.classList.add("active");
+  load();
  };
 });
+
 document.getElementById("toggle").onclick=()=>{
  document.getElementById("legend").classList.toggle("closed");
 };
-map.on("zoomend",()=>{if(waveItems.length){cancelAnimationFrame(animation);animation=requestAnimationFrame(animate)}});
+
 load();
 })();
 </script>
