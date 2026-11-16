@@ -1,14 +1,16 @@
+
 #!/usr/bin/env python3
-"""S.I.B.I.L.L.A. - ICON-EU Engine V2.
-DWD Open Data.
-Cinque orizzonti: 4, 8, 16, 24, 36 ore.
-Massimo cinque download GRIB per esecuzione.
-Nessuna ricerca ripetitiva di scadenze.
+"""S.I.B.I.L.L.A. - ICON-EU V3.
+DWD Open Data, cinque orizzonti.
+Massimo cinque acquisizioni GRIB.
 """
 import json
 import math
 import os
 import tempfile
+import urllib.request
+import zipfile
+import io
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -25,72 +27,124 @@ from shapely.geometry import box, shape, mapping
 from shapely.ops import unary_union
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "data" / "models" / "icon"
-STATUS = ROOT / "data" / "icon_status.json"
-
+OUT = ROOT / "data/models/icon"
+STATUS = ROOT / "data/icon_status.json"
 HOURS = (4, 8, 16, 24, 36)
-REGION = (-5.0, 38.0, 30.0, 48.0)
 PARAMS = ("CAPE_ML", "CIN_ML", "TQV")
+REGION = (-5.0, 38.0, 30.0, 48.0)
 
 
-def utcnow():
+def now():
     return datetime.now(timezone.utc)
 
 
-def iso(value):
-    return value.astimezone(timezone.utc).strftime(
+def iso(dt):
+    return dt.astimezone(timezone.utc).strftime(
         "%Y-%m-%dT%H:%M:%SZ"
     )
 
 
-def save(path, data):
+def save(path, obj):
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temp = tempfile.mkstemp(
-        dir=str(path.parent), suffix=".tmp"
-    )
+    fd, tmp = tempfile.mkstemp(dir=path.parent)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(
-                data, f, allow_nan=False,
-                ensure_ascii=False, separators=(",", ":")
-            )
-        os.replace(temp, path)
+            json.dump(obj, f, ensure_ascii=False,
+                      allow_nan=False, separators=(",", ":"))
+        os.replace(tmp, path)
     finally:
-        if os.path.exists(temp):
-            os.unlink(temp)
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
+def parse_cycle(value, depth=0):
+    if depth > 4 or value is None:
+        return None
+
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+
+    if isinstance(value, str):
+        s = value.strip()
+        try:
+            if s.isdigit() and len(s) in (10, 12, 14):
+                fmt = {
+                    10: "%Y%m%d%H",
+                    12: "%Y%m%d%H%M",
+                    14: "%Y%m%d%H%M%S"
+                }[len(s)]
+                return datetime.strptime(
+                    s, fmt
+                ).replace(tzinfo=timezone.utc)
+            dt = datetime.fromisoformat(
+                s.replace("Z", "+00:00")
+            )
+            return parse_cycle(dt, depth + 1)
+        except ValueError:
+            return None
+
+    if isinstance(value, dict):
+        for key in (
+            "datetime", "reference_time", "run_time",
+            "init_time", "initial_time", "cycle",
+            "date_time", "timestamp", "date"
+        ):
+            if key in value:
+                result = parse_cycle(
+                    value[key], depth + 1
+                )
+                if result is not None:
+                    return result
+        return None
+
+    for attr in (
+        "datetime", "reference_time", "run_time",
+        "init_time", "initial_time", "cycle",
+        "date_time", "timestamp", "date"
+    ):
+        try:
+            child = getattr(value, attr)
+            if callable(child):
+                child = child()
+        except (AttributeError, TypeError):
+            continue
+        result = parse_cycle(child, depth + 1)
+        if result is not None:
+            return result
+
+    return None
 
 
 def cycle_datetime(plan):
-    run = plan.run
-    value = getattr(run, "datetime", run)
+    run = getattr(plan, "run", None)
+    result = parse_cycle(run)
 
-    if callable(value):
-        value = value()
-
-    if isinstance(value, str):
-        value = datetime.fromisoformat(
-            value.replace("Z", "+00:00")
-        )
-
-    if not isinstance(value, datetime):
+    if result is None:
+        print("DWD PLAN TYPE:", type(plan).__name__)
+        print("DWD RUN TYPE:", type(run).__name__)
+        print("DWD RUN REPR:", repr(run)[:500])
+        print("DWD RUN ATTRIBUTES:", [
+            x for x in dir(run)
+            if not x.startswith("_")
+        ][:50])
         raise ValueError(
-            "Ciclo DWD non interpretabile"
+            "Ciclo DWD non interpretabile: "
+            "consultare diagnostica del log"
         )
 
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
+    if result > now() + timedelta(minutes=15):
+        raise ValueError("Ciclo DWD nel futuro")
 
-    return value.astimezone(timezone.utc)
+    if now() - result > timedelta(hours=24):
+        raise ValueError("Ciclo DWD troppo vecchio")
+
+    return result
 
 
 def parameter_name(gid):
-    try:
-        name = str(
-            codes_get(gid, "shortName")
-        ).upper()
-    except Exception:
-        return None
-
+    name = str(codes_get(gid, "shortName")).upper()
     aliases = {
         "CAPE_ML": "CAPE_ML",
         "CIN_ML": "CIN_ML",
@@ -101,47 +155,45 @@ def parameter_name(gid):
 
 def decode(path):
     fields = {}
+    names_seen = []
 
-    with path.open("rb") as stream:
+    with path.open("rb") as f:
         while True:
-            gid = codes_grib_new_from_file(stream)
+            gid = codes_grib_new_from_file(f)
             if gid is None:
                 break
-
             try:
+                short = str(codes_get(
+                    gid, "shortName"
+                )).upper()
+                names_seen.append(short)
                 name = parameter_name(gid)
                 if name is None:
                     continue
-
                 if name in fields:
                     raise ValueError(
                         "Parametro duplicato: " + name
                     )
-
                 values = codes_get_array(gid, "values")
                 lats = codes_get_array(gid, "latitudes")
                 lons = codes_get_array(gid, "longitudes")
-
                 if not (
                     len(values) == len(lats) == len(lons)
                 ):
                     raise ValueError(
-                        "Coordinate ICON incoerenti"
+                        "Griglia ICON incoerente"
                     )
-
                 fields[name] = (values, lats, lons)
-
             finally:
                 codes_release(gid)
 
     missing = set(PARAMS) - set(fields)
-
     if missing:
         raise ValueError(
-            "Parametri mancanti: " +
-            ", ".join(sorted(missing))
+            "Parametri GRIB mancanti: " +
+            ",".join(sorted(missing)) +
+            "; presenti: " + ",".join(names_seen[:20])
         )
-
     return fields
 
 
@@ -149,33 +201,21 @@ def aggregate(fields):
     buckets = defaultdict(
         lambda: {p: [] for p in PARAMS}
     )
-
     west, east, south, north = REGION
 
     for name, (values, lats, lons) in fields.items():
-        for value, lat, lon in zip(
-            values, lats, lons
-        ):
-            value = float(value)
-            lat = float(lat)
-            lon = float(lon)
-
+        for v, lat, lon in zip(values, lats, lons):
+            v, lat, lon = float(v), float(lat), float(lon)
             if lon > 180:
                 lon -= 360
-
             if not (
-                west <= lon < east
-                and south <= lat < north
-                and math.isfinite(value)
-                and abs(value) < 1e8
+                west <= lon < east and
+                south <= lat < north and
+                math.isfinite(v) and abs(v) < 1e8
             ):
                 continue
-
-            cell = (
-                math.floor(lon),
-                math.floor(lat)
-            )
-            buckets[cell][name].append(value)
+            key = (math.floor(lon), math.floor(lat))
+            buckets[key][name].append(v)
 
     return buckets
 
@@ -193,63 +233,44 @@ def classify(cape, cin, tqv):
 
 
 def land_mask():
-    import io
-    import urllib.request
-    import zipfile
-
     url = (
         "https://naturalearth.s3.amazonaws.com/"
         "50m_physical/ne_50m_land.zip"
     )
-
-    request = urllib.request.Request(
-        url,
-        headers={"User-Agent": "SIBILLA/2.0"}
+    req = urllib.request.Request(
+        url, headers={"User-Agent": "SIBILLA/3.0"}
     )
-
-    with urllib.request.urlopen(
-        request, timeout=45
-    ) as response:
-        payload = response.read(12_000_001)
-
-    if len(payload) > 12_000_000:
+    with urllib.request.urlopen(req, timeout=45) as r:
+        raw = r.read(12_000_001)
+    if len(raw) > 12_000_000:
         raise ValueError("Maschera troppo grande")
 
-    with tempfile.TemporaryDirectory() as directory:
-        folder = Path(directory)
-
-        with zipfile.ZipFile(
-            io.BytesIO(payload)
-        ) as archive:
+    with tempfile.TemporaryDirectory() as d:
+        folder = Path(d)
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
             for ext in ("shp", "shx", "dbf"):
-                filename = f"ne_50m_land.{ext}"
-                (folder / filename).write_bytes(
-                    archive.read(filename)
-                )
+                name = f"ne_50m_land.{ext}"
+                (folder / name).write_bytes(z.read(name))
 
         reader = shapefile.Reader(
             str(folder / "ne_50m_land.shp")
         )
-
         extent = box(*REGION)
         geometries = []
-
         for item in reader.shapes():
             geom = shape(item.__geo_interface__)
             if geom.intersects(extent):
                 geometries.append(
                     geom.intersection(extent)
                 )
-
         reader.close()
 
     if not geometries:
         raise ValueError("Maschera terrestre vuota")
-
     return unary_union(geometries)
 
 
-def polygon_parts(geom):
+def parts(geom):
     if geom.is_empty:
         return
     if geom.geom_type == "Polygon":
@@ -257,73 +278,60 @@ def polygon_parts(geom):
     elif geom.geom_type in (
         "MultiPolygon", "GeometryCollection"
     ):
-        for item in geom.geoms:
-            yield from polygon_parts(item)
+        for part in geom.geoms:
+            yield from parts(part)
 
 
-def make_product(fields, horizon, valid_at, land):
-    buckets = aggregate(fields)
+def make_product(fields, horizon, valid, land):
     groups = defaultdict(list)
-    statistics = defaultdict(list)
+    stats = defaultdict(list)
 
-    for (x, y), data in buckets.items():
+    for (x, y), data in aggregate(fields).items():
         if not all(data[p] for p in PARAMS):
             continue
 
         cape = max(data["CAPE_ML"])
         cin = max(data["CIN_ML"])
         tqv = sum(data["TQV"]) / len(data["TQV"])
-
-        category = classify(cape, cin, tqv)
-        if category is None:
+        cls = classify(cape, cin, tqv)
+        if cls is None:
             continue
 
-        square = box(x, y, x + 1, y + 1)
-        if not square.intersects(land):
+        cell = box(x, y, x + 1, y + 1)
+        if not cell.intersects(land):
             continue
-
-        groups[category].append(square)
-        statistics[category].append(
-            (cape, cin, tqv)
-        )
+        groups[cls].append(cell)
+        stats[cls].append((cape, cin, tqv))
 
     features = []
-
-    for category in ("A", "B", "C"):
-        if not groups[category]:
+    for cls in ("A", "B", "C"):
+        if not groups[cls]:
             continue
+        geom = unary_union(groups[cls]).intersection(land)
+        if not geom.is_valid:
+            geom = geom.buffer(0)
 
-        merged = unary_union(
-            groups[category]
-        ).intersection(land)
-
-        if not merged.is_valid:
-            merged = merged.buffer(0)
-
-        values = statistics[category]
-        count = len(values)
-
-        for part in polygon_parts(merged):
+        vals = stats[cls]
+        n = len(vals)
+        for part in parts(geom):
             if part.is_empty or part.area <= 0:
                 continue
-
             center = part.representative_point()
-
             features.append({
                 "type": "Feature",
                 "geometry": mapping(part),
                 "properties": {
-                    "class": category,
+                    "class": cls,
                     "label_lon": round(center.x, 5),
                     "label_lat": round(center.y, 5),
                     "cape_mean_j_kg": round(
-                        sum(v[0] for v in values) / count
+                        sum(v[0] for v in vals) / n
                     ),
                     "cin_mean_j_kg": round(
-                        sum(v[1] for v in values) / count
+                        sum(v[1] for v in vals) / n
                     ),
                     "pwat_mean_kg_m2": round(
-                        sum(v[2] for v in values) / count, 1
+                        sum(v[2] for v in vals) / n, 1
                     ),
                     "observed": False,
                     "probability_calibrated": False
@@ -339,13 +347,10 @@ def make_product(fields, horizon, valid_at, land):
             "model": "DWD ICON-EU",
             "status": "ready",
             "horizon_hours": horizon,
-            "forecast_valid_at": iso(valid_at),
-            "generated_at": iso(utcnow()),
+            "forecast_valid_at": iso(valid),
+            "generated_at": iso(now()),
             "source": "DWD Open Data ICON-EU",
-            "source_url": (
-                "https://opendata.dwd.de/"
-                "weather/nwp/v1/m/icon-eu/"
-            ),
+            "source_url": "https://opendata.dwd.de/",
             "source_license": "CC BY 4.0",
             "parameters": list(PARAMS),
             "land_source": "Natural Earth 1:50m",
@@ -356,79 +361,51 @@ def make_product(fields, horizon, valid_at, land):
             "probability_calibrated": False,
             "forecast_available": True,
             "index_type": "experimental_icon",
-            "note": (
-                "Indice sperimentale CAPE_ML/"
-                "CIN_ML/TQV, non calibrato."
-            )
+            "note": "Indice sperimentale non calibrato."
         }
     }
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
+    land = land_mask()
     results = {}
     downloads = 0
 
-    land = land_mask()
-
     with DWD() as dwd:
         model = dwd.nwp.model("icon-eu")
-
         available = {
-            str(p).upper()
-            for p in model.parameters()
+            str(p).upper() for p in model.parameters()
         }
-
         missing = set(PARAMS) - available
-
         if missing:
             raise RuntimeError(
-                "Parametri DWD non disponibili: " +
-                ", ".join(sorted(missing))
+                "Parametri DWD mancanti: " +
+                ",".join(sorted(missing))
             )
 
-        # Risoluzione del ciclo senza download.
         probe = model.select(
             list(PARAMS), steps="4h"
         ).resolve()
-
         cycle = cycle_datetime(probe)
-        now = utcnow()
+        reference = now()
+        print("ICON cycle:", iso(cycle), flush=True)
 
-        print("ICON ciclo:", iso(cycle))
-
-        for horizon in HOURS:
-            path = OUT / f"{horizon}h.geojson"
-
+        for h in HOURS:
+            path = OUT / f"{h}h.geojson"
             try:
-                # La scadenza deve cadere tra
-                # +h e +h+1 ore da adesso.
                 elapsed = (
-                    now - cycle
+                    reference - cycle
                 ).total_seconds() / 3600
+                step = max(1, math.ceil(elapsed + h))
+                valid = cycle + timedelta(hours=step)
 
-                step = math.ceil(
-                    elapsed + horizon
-                )
+                plan = model.select(
+                    list(PARAMS), steps=f"{step}h"
+                ).resolve()
 
-                if step < 1:
-                    raise ValueError(
-                        "Scadenza non valida"
-                    )
-
-                valid_at = cycle + timedelta(
-                    hours=step
-                )
-
-                query = model.select(
-                    list(PARAMS),
-                    steps=f"{step}h"
-                )
-                plan = query.resolve()
-
-                actual_cycle = cycle_datetime(plan)
-
-                if actual_cycle != cycle:
+                actual = cycle_datetime(plan)
+                if actual != cycle:
                     raise ValueError(
                         "Ciclo DWD cambiato"
                     )
@@ -440,63 +417,55 @@ def main():
                     fields = decode(target)
 
                 product = make_product(
-                    fields, horizon, valid_at, land
+                    fields, h, valid, land
                 )
-
                 product["metadata"]["model_cycle"] = (
                     iso(cycle)
                 )
                 product["metadata"]["model_step_hours"] = (
                     step
                 )
-
                 save(path, product)
-
-                results[str(horizon)] = {
+                results[str(h)] = {
                     "status": "ready",
-                    "step_hours": step,
                     "features": len(product["features"]),
-                    "valid_at": iso(valid_at)
+                    "step_hours": step,
+                    "valid_at": iso(valid)
                 }
-
                 print(
-                    f"ICON +{horizon}h: OK "
-                    f"(step {step}h)"
+                    f"ICON +{h}h: OK step={step}",
+                    flush=True
                 )
 
             except Exception as exc:
                 path.unlink(missing_ok=True)
-
-                results[str(horizon)] = {
+                results[str(h)] = {
                     "status": "unavailable",
-                    "error": (
-                        f"{type(exc).__name__}: {exc}"
-                    )
+                    "error": str(exc)
                 }
-
                 print(
-                    f"ICON +{horizon}h: "
-                    f"NON DISPONIBILE - {exc}"
+                    f"ICON +{h}h: {type(exc).__name__}: "
+                    f"{exc}", flush=True
                 )
 
     save(STATUS, {
-        "generated_at": iso(utcnow()),
-        "engine": "icon_eu_v2",
+        "generated_at": iso(now()),
+        "engine": "icon_eu_v3",
         "model_cycle": iso(cycle),
         "downloads_attempted": downloads,
-        "maximum_downloads": len(HOURS),
+        "maximum_downloads": 5,
         "horizons": results
     })
 
     if not any(
-        item["status"] == "ready"
-        for item in results.values()
+        x["status"] == "ready"
+        for x in results.values()
     ):
         raise RuntimeError(
-            "Nessun prodotto ICON disponibile"
+            "Nessun prodotto ICON valido"
         )
 
 
 if __name__ == "__main__":
     main()
-        
+    
