@@ -1,85 +1,224 @@
 
-name: SIBILLA Scientific Acquisition
+name: SIBILLA Multimodel Acquisition
 
 on:
   workflow_dispatch:
+
   schedule:
     - cron: "11,41 * * * *"
+
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - "backend/sibilla.py"
-      - "backend/gfs_engine.py"
+      - "backend/**"
       - ".github/workflows/sibilla.yml"
 
 permissions:
   contents: write
 
 concurrency:
-  group: sibilla-acquisition
+  group: sibilla-multimodel
   cancel-in-progress: false
 
 jobs:
-  acquire:
+  acquisition:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          persist-credentials: true
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: .github/workflows/sibilla.yml
 
-      - name: Install scientific dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "eccodes>=2.38,<3" "shapely>=2,<3" "pyshp>=2.3,<3"
+          python -m pip install \
+            "eccodes>=2.38,<3" \
+            "shapely>=2,<3" \
+            "pyshp>=2.3,<3" \
+            "ecmwf-opendata" \
+            "dwdopen"
 
-      - name: Compile scientific backends
+      - name: Check Python syntax
         run: |
-          python -m py_compile backend/sibilla.py backend/gfs_engine.py
+          python -m py_compile \
+            backend/sibilla.py \
+            backend/gfs_engine.py \
+            backend/ecmwf_engine.py \
+            backend/icon_engine.py \
+            backend/model_selector.py
 
-      - name: Acquire IRIDE radar observations
-        id: radar
-        run: python backend/sibilla.py
+      - name: Acquire IRIDE observations
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          python backend/sibilla.py
 
-      - name: Generate terrestrial GFS outlooks
+      - name: Acquire NOAA GFS
         id: gfs
         continue-on-error: true
         timeout-minutes: 12
-        run: python backend/gfs_engine.py
-
-      - name: Publish scientific products
-        if: always() && steps.radar.outcome != 'skipped'
-        shell: bash
         run: |
-          set -euo pipefail
+          python backend/gfs_engine.py
+
+      - name: Acquire ECMWF IFS
+        id: ecmwf
+        continue-on-error: true
+        timeout-minutes: 12
+        run: |
+          python backend/ecmwf_engine.py
+
+      - name: Acquire DWD ICON-EU
+        id: icon
+        continue-on-error: true
+        timeout-minutes: 12
+        run: |
+          python backend/icon_engine.py
+
+      - name: Select available model products
+        id: selector
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          python backend/model_selector.py
+
+      - name: Validate published forecasts
+        id: validation
+        run: |
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root = Path("data/forecast")
+          horizons = (4, 8, 16, 24, 36)
+          available = 0
+
+          for h in horizons:
+              path = root / f"{h}h.geojson"
+              if not path.exists():
+                  print(f"+{h}h: unavailable")
+                  continue
+
+              try:
+                  with path.open(encoding="utf-8") as f:
+                      product = json.load(f)
+
+                  metadata = product["metadata"]
+                  assert product["type"] == "FeatureCollection"
+                  assert isinstance(product["features"], list)
+                  assert metadata["status"] == "ready"
+                  assert metadata["horizon_hours"] == h
+                  assert metadata["land_mask"] is True
+                  assert metadata["probability_calibrated"] is False
+
+                  valid = datetime.fromisoformat(
+                      metadata["forecast_valid_at"].replace(
+                          "Z", "+00:00"
+                      )
+                  )
+                  assert valid > datetime.now(timezone.utc)
+
+                  for feature in product["features"]:
+                      assert feature["type"] == "Feature"
+                      assert feature["properties"]["class"] in (
+                          "A", "B", "C"
+                      )
+                      assert feature["geometry"]["type"] in (
+                          "Polygon", "MultiPolygon"
+                      )
+
+                  available += 1
+                  print(f"+{h}h: valid")
+
+              except Exception as exc:
+                  print(f"+{h}h: rejected: {exc}")
+                  path.unlink(missing_ok=True)
+
+          print(f"Validated horizons: {available}/5")
+          PY
+
+      - name: Save acquisition report
+        if: always()
+        env:
+          GFS_RESULT: ${{ steps.gfs.outcome }}
+          ECMWF_RESULT: ${{ steps.ecmwf.outcome }}
+          ICON_RESULT: ${{ steps.icon.outcome }}
+          SELECTOR_RESULT: ${{ steps.selector.outcome }}
+          VALIDATION_RESULT: ${{ steps.validation.outcome }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from datetime import datetime, timezone
+
+          report = {
+              "generated_at": datetime.now(
+                  timezone.utc
+              ).isoformat(),
+              "gfs": os.environ.get("GFS_RESULT"),
+              "ecmwf": os.environ.get("ECMWF_RESULT"),
+              "icon": os.environ.get("ICON_RESULT"),
+              "selector": os.environ.get("SELECTOR_RESULT"),
+              "validation": os.environ.get(
+                  "VALIDATION_RESULT"
+              ),
+              "note": (
+                  "Workflow outcomes only. "
+                  "Success does not establish "
+                  "forecast accuracy."
+              )
+          }
+
+          target = Path("data/acquisition_report.json")
+          target.parent.mkdir(parents=True, exist_ok=True)
+          target.write_text(
+              json.dumps(report, indent=2),
+              encoding="utf-8"
+          )
+          PY
+
+      - name: Publish data
+        if: always()
+        run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add -A data/
+
           if git diff --cached --quiet; then
-            echo "No new products."
+            echo "No data changes"
             exit 0
           fi
-          git commit -m "Update SIBILLA scientific products"
+
+          git commit -m "SIBILLA multimodel data update"
+
           for attempt in 1 2 3; do
             git fetch origin main
+
             if ! git rebase origin/main; then
-              git rebase --abort || true
-              echo "Concurrent update conflict"
+              git rebase --abort
               exit 1
             fi
+
             if git push origin HEAD:main; then
-              echo "Products published"
+              echo "Data published"
               exit 0
             fi
+
             sleep 5
           done
-          echo "Failed to publish after 3 attempts"
+
+          echo "Push failed after retries"
           exit 1
           
