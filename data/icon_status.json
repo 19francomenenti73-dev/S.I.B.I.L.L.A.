@@ -1,1 +1,45 @@
-{"generated_at":"2026-11-16T16:03:17Z","engine":"icon_eu_v4","model_cycle":"2026-11-16T12:00:00Z","downloads_attempted":5,"maximum_downloads":5,"horizons":{"4":{"status":"unavailable","error":"RuntimeError: Coordinate CAPE_ML non disponibili; arrays=KeyValueNotFoundError: Key/value not found; iterator=FunctionNotImplementedError: Function not yet implemented"},"8":{"status":"unavailable","error":"RuntimeError: Coordinate CAPE_ML non disponibili; arrays=KeyValueNotFoundError: Key/value not found; iterator=FunctionNotImplementedError: Function not yet implemented"},"16":{"status":"unavailable","error":"RuntimeError: Coordinate CAPE_ML non disponibili; arrays=KeyValueNotFoundError: Key/value not found; iterator=FunctionNotImplementedError: Function not yet implemented"},"24":{"status":"unavailable","error":"RuntimeError: Coordinate CAPE_ML non disponibili; arrays=KeyValueNotFoundError: Key/value not found; iterator=FunctionNotImplementedError: Function not yet implemented"},"36":{"status":"unavailable","error":"RuntimeError: Coordinate CAPE_ML non disponibili; arrays=KeyValueNotFoundError: Key/value not found; iterator=FunctionNotImplementedError: Function not yet implemented"}}}
+{
+  "model": "ICON-2I",
+  "status": "sample_decoded",
+  "generated_at": "2026-11-16T16:31:32.770028Z",
+  "source": {
+    "provider": "Agenzia ItaliaMeteo",
+    "dataset": "ICON-2I",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "source_url": "https://meteohub.agenziaitaliameteo.it/nwp/ICON-2I_SURFACE_PRESSURE_LEVELS/",
+    "modified": false
+  },
+  "forecast_ready": false,
+  "test_parameter": "CAPE_ML",
+  "available_cycles": [
+    "2026-11-16T12:00:00+00:00",
+    "2026-11-16T00:00:00+00:00",
+    "2026-11-15T12:00:00+00:00",
+    "2026-11-15T00:00:00+00:00",
+    "2026-11-14T12:00:00+00:00"
+  ],
+  "cycle": "2026-11-16T12:00:00+00:00",
+  "sample_url": "https://meteohub.agenziaitaliameteo.it/nwp/ICON-2I_SURFACE_PRESSURE_LEVELS/2026111612/CAPE_ML/ICON_2I_SURFACE_PRESSURE_LEVELS_2026111612_atmML-0.grib",
+  "download_bytes": 84565244,
+  "grib": {
+    "shortName": "cape_ml",
+    "name": "Convective Available Potential Energy, mean layer",
+    "gridType": "regular_ll",
+    "numberOfPoints": 579121,
+    "numberOfGridUsed": null,
+    "uuidOfHGrid": null,
+    "dataDate": 20261116,
+    "dataTime": 1200,
+    "step": "0m",
+    "stepUnits": 0,
+    "validityDate": 20261116,
+    "validityTime": 1200,
+    "units": "J kg**-1",
+    "decoded_values": 579121,
+    "coordinate_method": "direct_arrays",
+    "coordinates_available": true,
+    "coordinate_count": 579121
+  },
+  "note": "GRIB georeferenziato. Previsioni non ancora generate."
+}
