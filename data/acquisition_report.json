@@ -1,0 +1,9 @@
+{
+  "generated_at": "2026-11-16T15:10:35.865098+00:00",
+  "gfs": "success",
+  "ecmwf": "success",
+  "icon": "failure",
+  "selector": "success",
+  "validation": "success",
+  "note": "Workflow outcomes only. Success does not establish forecast accuracy."
+}
