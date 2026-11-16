@@ -57,6 +57,7 @@ jobs:
             backend/model_selector.py
 
       - name: Acquire IRIDE observations
+        id: iride
         continue-on-error: true
         timeout-minutes: 3
         run: |
@@ -104,6 +105,7 @@ jobs:
 
           for h in horizons:
               path = root / f"{h}h.geojson"
+
               if not path.exists():
                   print(f"+{h}h: unavailable")
                   continue
@@ -113,18 +115,22 @@ jobs:
                       product = json.load(f)
 
                   metadata = product["metadata"]
+
                   assert product["type"] == "FeatureCollection"
                   assert isinstance(product["features"], list)
                   assert metadata["status"] == "ready"
                   assert metadata["horizon_hours"] == h
                   assert metadata["land_mask"] is True
                   assert metadata["probability_calibrated"] is False
+                  assert metadata["geometry_type"] == \
+                      "merged_land_clipped_polygons"
 
                   valid = datetime.fromisoformat(
                       metadata["forecast_valid_at"].replace(
                           "Z", "+00:00"
                       )
                   )
+
                   assert valid > datetime.now(timezone.utc)
 
                   for feature in product["features"]:
@@ -152,6 +158,7 @@ jobs:
           GFS_RESULT: ${{ steps.gfs.outcome }}
           ECMWF_RESULT: ${{ steps.ecmwf.outcome }}
           ICON_RESULT: ${{ steps.icon.outcome }}
+          IRIDE_RESULT: ${{ steps.iride.outcome }}
           SELECTOR_RESULT: ${{ steps.selector.outcome }}
           VALIDATION_RESULT: ${{ steps.validation.outcome }}
         run: |
@@ -168,10 +175,9 @@ jobs:
               "gfs": os.environ.get("GFS_RESULT"),
               "ecmwf": os.environ.get("ECMWF_RESULT"),
               "icon": os.environ.get("ICON_RESULT"),
+              "iride": os.environ.get("IRIDE_RESULT"),
               "selector": os.environ.get("SELECTOR_RESULT"),
-              "validation": os.environ.get(
-                  "VALIDATION_RESULT"
-              ),
+              "validation": os.environ.get("VALIDATION_RESULT"),
               "note": (
                   "Workflow outcomes only. "
                   "Success does not establish "
@@ -189,36 +195,63 @@ jobs:
 
       - name: Publish data
         if: always()
+        shell: bash
         run: |
+          set -euo pipefail
+
           git config user.name "github-actions[bot]"
           git config user.email \
             "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add -A data/
+          # Copia temporanea dei prodotti appena generati.
+          SNAPSHOT="$(mktemp -d)"
+          trap 'rm -rf "$SNAPSHOT"' EXIT
 
-          if git diff --cached --quiet; then
-            echo "No data changes"
-            exit 0
-          fi
+          mkdir -p "$SNAPSHOT/data"
+          cp -a data/. "$SNAPSHOT/data/"
 
-          git commit -m "SIBILLA multimodel data update"
-
-          for attempt in 1 2 3; do
-            git fetch origin main
-
-            if ! git rebase origin/main; then
-              git rebase --abort
-              exit 1
+          # Registra le previsioni eliminate dal selettore.
+          for h in 4 8 16 24 36; do
+            if [ ! -f "data/forecast/${h}h.geojson" ]; then
+              touch "$SNAPSHOT/missing_${h}"
             fi
+          done
 
-            if git push origin HEAD:main; then
-              echo "Data published"
+          # Nessun rebase: si riparte dall'ultimo main.
+          for attempt in 1 2 3 4 5; do
+            echo "Publication attempt $attempt"
+
+            git fetch origin main
+            git reset --hard origin/main
+
+            mkdir -p data
+            cp -a "$SNAPSHOT/data/." data/
+
+            for h in 4 8 16 24 36; do
+              if [ -f "$SNAPSHOT/missing_${h}" ]; then
+                rm -f "data/forecast/${h}h.geojson"
+              fi
+            done
+
+            git add -A data/
+
+            if git diff --cached --quiet; then
+              echo "No data changes"
               exit 0
             fi
 
+            git commit -m \
+              "SIBILLA multimodel data update"
+
+            if git push origin HEAD:main; then
+              echo "Data published successfully"
+              exit 0
+            fi
+
+            echo "Remote changed, retrying..."
             sleep 5
           done
 
-          echo "Push failed after retries"
+          echo "Publication failed after 5 attempts"
           exit 1
           
