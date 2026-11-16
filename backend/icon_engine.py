@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """S.I.B.I.L.L.A. - ICON-EU Engine V2.
 DWD Open Data.
