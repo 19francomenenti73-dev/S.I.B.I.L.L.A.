@@ -9,169 +9,103 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box}
-html,body{
- margin:0;width:100%;height:100%;overflow:hidden;
- background:#081426;color:white;font-family:Arial,sans-serif
-}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;
+background:#081426;color:white;font-family:Arial,sans-serif}
 #map{position:absolute;inset:0;background:#d5dce2}
-header{
- position:absolute;z-index:1000;top:8px;left:50%;
- transform:translateX(-50%);width:min(96%,650px);
- pointer-events:none
-}
-.brand{
- text-align:center;font-size:clamp(23px,4vw,32px);
- font-weight:900;letter-spacing:3px;
- background:linear-gradient(90deg,
- #00eaff,#347bff,#b34aff,#ff4bd8,#00eaff);
- background-size:300% 100%;
- background-clip:text;-webkit-background-clip:text;
- color:transparent;animation:smoke 8s linear infinite;
- filter:drop-shadow(0 1px 3px #071425)
-}
+header{position:absolute;z-index:1000;top:8px;left:50%;
+transform:translateX(-50%);width:min(96%,650px);
+pointer-events:none}
+.brand{text-align:center;font-size:clamp(23px,4vw,32px);
+font-weight:900;letter-spacing:3px;
+background:linear-gradient(90deg,#00eaff,#347bff,
+#b34aff,#ff4bd8,#00eaff);background-size:300% 100%;
+background-clip:text;-webkit-background-clip:text;
+color:transparent;animation:smoke 8s linear infinite;
+filter:drop-shadow(0 1px 3px #071425)}
 @keyframes smoke{to{background-position:300% 0}}
-.subtitle{
- text-align:center;font-size:10px;letter-spacing:1.5px;
- text-shadow:0 1px 5px #000
-}
-.tabs{
- display:flex;gap:5px;margin-top:12px;padding:5px;
- background:#08182eef;border:1px solid #ffffff77;
- border-radius:13px;pointer-events:auto
-}
-.tabs button{
- flex:1;padding:12px 3px;border:0;border-radius:9px;
- background:transparent;color:#c1d3e7;
- font-weight:bold;font-size:13px
-}
-.tabs button.active{
- background:linear-gradient(110deg,#086fd5,#852bd1);
- color:white;box-shadow:0 0 13px #605bff88
-}
-.legend{
- position:absolute;z-index:1100;top:150px;right:12px;
- width:268px;max-height:calc(100% - 195px);
- overflow:auto;background:#061326f5;
- border:1px solid #ffffffa0;border-radius:19px;
- padding:17px;box-shadow:0 8px 28px #0008
-}
+.subtitle{text-align:center;font-size:10px;letter-spacing:1.5px;
+text-shadow:0 1px 5px #000}
+.tabs{display:flex;gap:5px;margin-top:12px;padding:5px;
+background:#08182eef;border:1px solid #ffffff77;
+border-radius:13px;pointer-events:auto}
+.tabs button{flex:1;min-width:0;padding:12px 2px;border:0;
+border-radius:9px;background:transparent;color:#c1d3e7;
+font-weight:bold;font-size:12px;cursor:pointer}
+.tabs button.active{background:linear-gradient(110deg,
+#086fd5,#852bd1);color:white;box-shadow:0 0 13px #605bff88}
+.models{position:absolute;z-index:1050;top:112px;right:9px;
+width:126px;padding:8px 10px;background:#061326ed;
+border:1px solid #ffffff85;border-radius:11px;
+box-shadow:0 3px 12px #0006}
+.models-title{font-size:10px;font-weight:900;
+letter-spacing:.5px;margin-bottom:6px}
+.model-row{display:flex;justify-content:space-between;
+align-items:center;gap:6px;font-size:10px;padding:3px 0}
+.light{display:inline-block;width:9px;height:9px;
+border-radius:50%;background:#8190a0;flex-shrink:0}
+.light.ok{background:#19df68;box-shadow:0 0 8px #19df68}
+.light.fail{background:#f15b79;box-shadow:0 0 6px #f15b79}
+.models-note{font-size:8px;color:#b8cadc;margin-top:5px}
+.legend{position:absolute;z-index:1100;top:220px;right:9px;
+width:268px;max-height:calc(100% - 265px);overflow:auto;
+background:#061326f5;border:1px solid #ffffffa0;
+border-radius:19px;padding:17px;box-shadow:0 8px 28px #0008}
 .legend.closed{display:none}
 .legend h2{margin:0 0 12px;font-size:20px}
-.item{
- display:flex;gap:12px;align-items:center;
- border-top:1px solid #ffffff25;padding:10px 0
-}
-.letter{
- width:54px;min-width:54px;height:54px;
- display:grid;place-items:center;
- border:2px solid;border-radius:12px;
- font-size:28px;font-weight:900
-}
+.item{display:flex;gap:12px;align-items:center;
+border-top:1px solid #ffffff25;padding:10px 0}
+.letter{width:54px;min-width:54px;height:54px;
+display:grid;place-items:center;border:2px solid;
+border-radius:12px;font-size:28px;font-weight:900}
 .a{color:#e23fff;background:#a41ad333}
 .b{color:#388dff;background:#2867e933}
 .c{color:#00edfa;background:#00adbd33}
-.d{color:#d0d8e4;background:#8491a033}
 .item strong{font-size:13px;display:block}
-.item small{
- font-size:11px;color:#c6d5e7;
- line-height:1.5;display:block;margin-top:4px
-}
-.note{
- border-top:1px solid #ffffff55;padding-top:12px;
- font-size:11px;line-height:1.6;color:#c2d3e8
-}
-.toggle{
- position:absolute;z-index:1000;
- right:8px;bottom:44px;padding:9px 12px;
- background:#08182e;color:white;
- border:1px solid #9db4ce;border-radius:10px;
- font-size:12px;font-weight:bold
-}
-.mini-legend{
- position:absolute;z-index:900;
- right:8px;bottom:91px;
- display:flex;align-items:center;gap:8px;
- padding:8px 10px;border-radius:11px;
- border:1px solid #ffffff80;
- background:#061326e9;
- box-shadow:0 3px 14px #0006
-}
-.mini-legend .mini-title{
- font-size:10px;font-weight:bold;
- color:#e4edf9;margin-right:2px
-}
-.mini-key{
- display:flex;align-items:center;gap:3px;
- font-size:12px;font-weight:900
-}
-.mini-key i{
- display:block;width:9px;height:9px;
- border-radius:3px;background:var(--key)
-}
-.credits{
- position:absolute;z-index:850;
- left:8px;bottom:45px;
- max-width:min(67%,440px);
- padding:7px 9px;background:#061326e9;
- border:1px solid #ffffff65;
- border-radius:9px;font-size:9px;
- line-height:1.5;color:#e4edf9
-}
-.credits strong{color:white}
-.credits a{color:#a8d7ff;text-decoration:underline}
-.status{
- position:absolute;z-index:850;bottom:100px;
- left:8px;padding:7px 10px;
- background:#07172ae9;
- border:1px solid #8ba0b9;border-radius:9px;
- font-size:9px;text-align:left;
- pointer-events:none;max-width:63%
-}
-.sib-label{
- background:transparent!important;border:0!important;
- text-align:center;pointer-events:none;
- opacity:1!important
-}
-.sib-label span{
- display:block;font-weight:900;font-size:28px;
- line-height:36px;opacity:1;
- -webkit-text-stroke:1.3px #06101d;
- text-shadow:0 1px 3px #000,0 0 5px #000
-}
-.leaflet-popup-content-wrapper{
- background:#08172b;color:white;
- border:1px solid #7392b5
-}
+.item small{font-size:11px;color:#c6d5e7;
+line-height:1.5;display:block;margin-top:4px}
+.note{border-top:1px solid #ffffff55;padding-top:12px;
+font-size:11px;line-height:1.6;color:#c2d3e8}
+.toggle{position:absolute;z-index:1000;right:8px;bottom:44px;
+padding:9px 12px;background:#08182e;color:white;
+border:1px solid #9db4ce;border-radius:10px;
+font-size:12px;font-weight:bold;cursor:pointer}
+.mini-legend{position:absolute;z-index:900;right:8px;
+bottom:91px;display:flex;align-items:center;gap:8px;
+padding:8px 10px;border-radius:11px;
+border:1px solid #ffffff80;background:#061326e9}
+.mini-key{font-size:12px;font-weight:900}
+.credits{position:absolute;z-index:850;left:8px;bottom:45px;
+max-width:min(75%,530px);padding:7px 9px;
+background:#061326e9;border:1px solid #ffffff65;
+border-radius:9px;font-size:9px;line-height:1.5}
+.credits a{color:#a8d7ff}
+.status{position:absolute;z-index:850;bottom:105px;left:8px;
+padding:7px 10px;background:#07172aef;
+border:1px solid #8ba0b9;border-radius:9px;
+font-size:10px;line-height:1.5;max-width:65%}
+.sib-label{background:transparent!important;border:0!important;
+text-align:center;pointer-events:none}
+.sib-label span{display:block;font-weight:900;font-size:28px;
+line-height:36px;-webkit-text-stroke:1.3px #06101d;
+text-shadow:0 1px 3px #000,0 0 5px #000}
+.leaflet-popup-content-wrapper{background:#08172b;
+color:white;border:1px solid #7392b5}
 .leaflet-popup-tip{background:#08172b}
 .leaflet-popup-close-button{color:white!important}
-.leaflet-control-attribution{
- background:#ffffffed!important;
- color:#17253b!important;
- font-size:10px!important
-}
+.leaflet-control-attribution{background:#ffffffed!important;
+color:#17253b!important;font-size:10px!important}
 @media(max-width:650px){
  .brand{font-size:23px}
  .subtitle{font-size:9px}
  .tabs{margin-top:8px}
- .legend{
-  top:auto;bottom:150px;right:8px;
-  width:min(290px,85vw);
-  max-height:55vh;padding:12px
- }
- .mini-legend{
-  right:8px;bottom:91px;
-  gap:7px;padding:7px 9px
- }
- .mini-legend .mini-title{font-size:9px}
- .mini-key{font-size:12px}
- .credits{
-  left:8px;bottom:43px;
-  max-width:70%;font-size:8px
- }
- .status{
-  left:8px;bottom:141px;
-  max-width:62%;font-size:9px
- }
+ .tabs button{font-size:11px;padding:10px 1px}
+ .models{top:100px;right:8px;width:110px;padding:6px 8px}
+ .models-title{font-size:9px}
+ .model-row{font-size:9px}
+ .legend{top:auto;bottom:150px;right:8px;
+ width:min(290px,85vw);max-height:50vh;padding:12px}
+ .status{left:8px;bottom:141px;max-width:62%;font-size:9px}
+ .credits{left:8px;bottom:43px;max-width:74%;font-size:8px}
 }
 @media(prefers-reduced-motion:reduce){
  .brand{animation:none}
@@ -182,68 +116,87 @@ header{
 <div id="map"></div>
 <header>
 <div class="brand">S.I.B.I.L.L.A.</div>
-<div class="subtitle">INDICE DI PROBABILITÀ CONVETTIVA</div>
-<nav class="tabs">
-<button class="active" data-h="3">3 ORE</button>
+<div class="subtitle">SISTEMA SPERIMENTALE DI PREVISIONE CONVETTIVA</div>
+<nav class="tabs" aria-label="Orizzonti previsionali">
+<button class="active" data-h="4">4 ORE</button>
+<button data-h="8">8 ORE</button>
+<button data-h="16">16 ORE</button>
 <button data-h="24">24 ORE</button>
-<button data-h="48">48 ORE</button>
-<button data-h="72">72 ORE</button>
+<button data-h="36">36 ORE</button>
 </nav>
 </header>
 
+<aside class="models" aria-label="Stato dei modelli">
+<div class="models-title">MODELLI</div>
+<div class="model-row">GFS <i class="light" id="light-gfs"></i></div>
+<div class="model-row">ECMWF <i class="light" id="light-ecmwf"></i></div>
+<div class="model-row">ICON-EU <i class="light" id="light-icon"></i></div>
+<div class="models-note" id="models-note">Verifica in corso</div>
+</aside>
+
 <aside class="legend closed" id="legend">
 <h2>Potenziale convettivo</h2>
-<div class="item"><span class="letter a">A</span><div><strong>Elevato</strong><small>Condizioni molto favorevoli alla convezione intensa</small></div></div>
-<div class="item"><span class="letter b">B</span><div><strong>Moderato</strong><small>Condizioni favorevoli alla convezione organizzata</small></div></div>
-<div class="item"><span class="letter c">C</span><div><strong>Basso</strong><small>Convezione possibile, generalmente meno organizzata</small></div></div>
-<div class="item"><span class="letter d">D</span><div><strong>Non significativo</strong><small>Segnale convettivo debole o assente</small></div></div>
+<div class="item"><span class="letter a">A</span>
+<div><strong>Elevato</strong><small>Condizioni molto favorevoli
+alla convezione intensa.</small></div></div>
+<div class="item"><span class="letter b">B</span>
+<div><strong>Moderato</strong><small>Condizioni favorevoli
+alla convezione organizzata.</small></div></div>
+<div class="item"><span class="letter c">C</span>
+<div><strong>Basso</strong><small>Convezione possibile,
+generalmente meno organizzata.</small></div></div>
 <div class="note">
-Dati meteorologici NOAA/NCEP – GFS.<br>
 Indice sperimentale non calibrato.<br>
-Le classi non rappresentano probabilità percentuali.<br>
-Aree limitate alle terre emerse.<br>
-Il ritaglio geografico non aumenta la risoluzione meteorologica.
+Le classi non rappresentano percentuali.<br>
+Poligoni limitati alle terre emerse.<br>
+La selezione provvisoria non equivale
+a una verifica storica IRIDE.<br>
+Le aree prive di poligoni non garantiscono
+assenza di fenomeni.
 </div>
 </aside>
 
-<div class="mini-legend" aria-label="Legenda classi convettive">
-<span class="mini-title">IPC</span>
-<span class="mini-key" style="--key:#e23fff;color:#e23fff"><i></i>A</span>
-<span class="mini-key" style="--key:#388dff;color:#73b0ff"><i></i>B</span>
-<span class="mini-key" style="--key:#00edfa;color:#00edfa"><i></i>C</span>
-<span class="mini-key" style="--key:#d0d8e4;color:#d0d8e4"><i></i>D</span>
+<div class="mini-legend" aria-label="Classi convettive">
+<span class="mini-key" style="color:#e23fff">● A</span>
+<span class="mini-key" style="color:#73b0ff">● B</span>
+<span class="mini-key" style="color:#00edfa">● C</span>
 </div>
-
 <button class="toggle" id="toggle"
- aria-expanded="false" aria-controls="legend">Legenda</button>
+aria-expanded="false" aria-controls="legend">Legenda</button>
 
 <div class="credits">
 <strong>S.I.B.I.L.L.A. · Nowcasting Italia</strong><br>
-Dati: <a href="https://www.nco.ncep.noaa.gov/pmb/products/gfs/" target="_blank" rel="noopener noreferrer">NOAA/NCEP GFS</a><br>
-Cartografia: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a><br>
-Indice sperimentale · non calibrato
+Modelli: <a href="https://www.nco.ncep.noaa.gov/pmb/products/gfs/"
+target="_blank" rel="noopener noreferrer">NOAA/NCEP GFS</a> ·
+<a href="https://www.ecmwf.int/en/forecasts/datasets/open-data"
+target="_blank" rel="noopener noreferrer">ECMWF IFS Open Data</a> ·
+<a href="https://opendata.dwd.de/"
+target="_blank" rel="noopener noreferrer">DWD ICON-EU</a><br>
+Terre emerse: <a href="https://www.naturalearthdata.com/"
+target="_blank" rel="noopener noreferrer">Natural Earth</a><br>
+Cartografia: <a href="https://www.openstreetmap.org/copyright"
+target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a><br>
+Elaborazione sperimentale · non calibrata
+</div>
+<div class="status" id="status" role="status">
+CARICAMENTO PREVISIONE...
 </div>
 
-<div class="status" id="status">CARICAMENTO GFS...</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (()=>{
 "use strict";
-
 const map=L.map("map",{
  center:[42.2,12.5],zoom:5,minZoom:3,maxZoom:12,
  preferCanvas:false,zoomControl:false
 });
 L.control.zoom({position:"bottomleft"}).addTo(map);
 
-// Nuova cartografia: OpenStreetMap Standard
-L.tileLayer(
- "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
- {
-  maxZoom:19,
-  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
- }
-).addTo(map);
+// CARTOGRAFIA ORIGINALE DI S.I.B.I.L.L.A.
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+ maxZoom:19,
+ attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+}).addTo(map);
 
 for(const [name,z] of [
  ["areas",430],["waves",440],["letters",450]
@@ -251,150 +204,94 @@ for(const [name,z] of [
  map.createPane(name);
  map.getPane(name).style.zIndex=z;
 }
-
 const areas=L.layerGroup().addTo(map);
-const wavesLayer=L.layerGroup().addTo(map);
+const waves=L.layerGroup().addTo(map);
 const labels=L.layerGroup().addTo(map);
-const colors={
- A:"#e23fff",B:"#388dff",
- C:"#00edfa",D:"#d0d8e4"
-};
-const rank={A:0,B:1,C:2,D:3};
+const colors={A:"#e23fff",B:"#388dff",C:"#00edfa"};
+const rank={A:0,B:1,C:2};
 const status=document.getElementById("status");
-const reduced=window.matchMedia(
- "(prefers-reduced-motion: reduce)"
-).matches;
+const reduced=matchMedia("(prefers-reduced-motion:reduce)").matches;
+let horizon=4,requestId=0,frame=0,pulses=[],items=[];
 
-let horizon=3,requestId=0,frame=0;
-let pulses=[],items=[];
- 
 function clear(){
  cancelAnimationFrame(frame);
- areas.clearLayers();
- wavesLayer.clearLayers();
- labels.clearLayers();
- pulses=[];
- items=[];
+ areas.clearLayers();waves.clearLayers();labels.clearLayers();
+ pulses=[];items=[];
 }
-
-function safe(value){
- return String(value??"N/D").replace(
-  /[&<>"']/g,
-  c=>({
-   "&":"&amp;","<":"&lt;",">":"&gt;",
-   '"':"&quot;","'":"&#39;"
-  })[c]
- );
+function safe(v){
+ return String(v??"N/D").replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",
+ '"':"&quot;","'":"&#39;"
+ })[c]);
 }
-
-function inRing(point,ring){
- let inside=false;
- const x=point[0],y=point[1];
- for(let i=0,j=ring.length-1;i<ring.length;j=i++){
-  const a=ring[i],b=ring[j];
-  if((a[1]>y)!==(b[1]>y)){
-   const cross=(b[0]-a[0])*(y-a[1])/
-    (b[1]-a[1])+a[0];
-   if(x<cross)inside=!inside;
-  }
- }
- return inside;
+function localTime(v){
+ const d=new Date(v);
+ return Number.isFinite(d.getTime())?
+ d.toLocaleString("it-IT",{
+ timeZone:"Europe/Rome",day:"2-digit",month:"2-digit",
+ hour:"2-digit",minute:"2-digit"
+ }):"N/D";
 }
-
-function inPolygon(point,rings){
- if(!rings.length||!inRing(point,rings[0]))return false;
- for(let i=1;i<rings.length;i++){
-  if(inRing(point,rings[i]))return false;
- }
- return true;
-}
-
 function contains(geometry,lat,lon){
  if(!geometry)return false;
  const point=[lon,lat];
- if(geometry.type==="Polygon"){
-  return inPolygon(point,geometry.coordinates);
+ function inRing(r){
+  let inside=false;
+  for(let i=0,j=r.length-1;i<r.length;j=i++){
+   const a=r[i],b=r[j];
+   if((a[1]>point[1])!==(b[1]>point[1]) &&
+    point[0]<(b[0]-a[0])*(point[1]-a[1])/
+    (b[1]-a[1])+a[0])inside=!inside;
+  }
+  return inside;
  }
- if(geometry.type==="MultiPolygon"){
-  return geometry.coordinates.some(
-   polygon=>inPolygon(point,polygon)
-  );
+ function inPolygon(rings){
+  return rings.length>0&&inRing(rings[0])&&
+   !rings.slice(1).some(inRing);
  }
+ if(geometry.type==="Polygon")
+  return inPolygon(geometry.coordinates);
+ if(geometry.type==="MultiPolygon")
+  return geometry.coordinates.some(inPolygon);
  return false;
 }
-
 function drawArea(feature){
- const p=feature.properties||{};
- const cls=p.class;
- if(!Object.prototype.hasOwnProperty.call(colors,cls)){
-  return null;
- }
+ const p=feature.properties||{},cls=p.class;
+ if(!Object.prototype.hasOwnProperty.call(colors,cls))return;
  const color=colors[cls];
-
- const polygon=L.geoJSON(feature,{
+ L.geoJSON(feature,{
   pane:"areas",
-  style:{
-   color,weight:2.4,opacity:0.94,
-   fillColor:color,fillOpacity:0.17,
-   lineJoin:"round"
-  }
- }).addTo(areas);
-
- polygon.bindPopup(
+  style:{color,weight:2.4,opacity:.94,
+   fillColor:color,fillOpacity:.17,lineJoin:"round"}
+ }).bindPopup(
   "<b>Potenziale convettivo "+safe(cls)+"</b><br>"+
-  "CAPE medio della classe: "+
-  safe(p.cape_mean_j_kg)+" J/kg<br>"+
-  "CIN medio della classe: "+
-  safe(p.cin_mean_j_kg)+" J/kg<br>"+
-  "PWAT medio della classe: "+
+  "CAPE medio: "+safe(p.cape_mean_j_kg)+" J/kg<br>"+
+  "CIN medio: "+safe(p.cin_mean_j_kg)+" J/kg<br>"+
+  "Vapore integrato: "+
   safe(p.pwat_mean_kg_m2)+" kg/m²<br>"+
-  "Valori aggregati per classe, non per singola area.<br>"+
+  "Valori aggregati per classe.<br>"+
   "Indice sperimentale non calibrato."
- );
-
- if(cls!=="D"){
-  L.geoJSON(feature,{
-   pane:"waves",interactive:false,
-   style:{
-    color,weight:6,opacity:0.08,
-    fill:false,lineJoin:"round"
-   }
-  }).addTo(wavesLayer);
-
-  if(!reduced){
-   const pulse=L.geoJSON(feature,{
-    pane:"waves",interactive:false,
-    style:{
-     color,weight:2,opacity:0,
-     fill:false,lineJoin:"round"
-    }
-   }).addTo(wavesLayer);
-   pulses.push({
-    pulse,phase:(pulses.length%3)/3
-   });
-  }
- }
-
- return {feature,cls,color,polygon};
+ ).addTo(areas);
+ const outline=L.geoJSON(feature,{
+  pane:"waves",interactive:false,
+  style:{color,weight:5,opacity:.12,fill:false}
+ }).addTo(waves);
+ if(!reduced)pulses.push({
+  outline,phase:(pulses.length%4)/4
+ });
+ items.push({feature,cls,color});
 }
-
 function drawLabels(){
  labels.clearLayers();
  const placed=[];
- const sorted=[...items].sort(
+ for(const item of [...items].sort(
   (a,b)=>rank[a.cls]-rank[b.cls]
- );
-
- for(const item of sorted){
+ )){
   const p=item.feature.properties||{};
-  const lat=Number(p.label_lat);
-  const lon=Number(p.label_lon);
+  const lat=Number(p.label_lat),lon=Number(p.label_lon);
   if(p.label_lat==null||p.label_lon==null||
    !Number.isFinite(lat)||!Number.isFinite(lon))continue;
-
-  const geometry=item.feature.geometry;
-  if(!contains(geometry,lat,lon))continue;
-
+  if(!contains(item.feature.geometry,lat,lon))continue;
   const origin=map.latLngToContainerPoint([lat,lon]);
   const candidates=[[0,0]];
   for(const radius of [20,40,60,80]){
@@ -406,18 +303,15 @@ function drawLabels(){
     ]);
    }
   }
-
   let chosen=null;
   for(const [dx,dy] of candidates){
    const pt=L.point(origin.x+dx,origin.y+dy);
    const ll=map.containerPointToLatLng(pt);
-   if(!contains(geometry,ll.lat,ll.lng))continue;
+   if(!contains(item.feature.geometry,ll.lat,ll.lng))continue;
    if(placed.some(q=>q.distanceTo(pt)<39))continue;
-   chosen={pt,ll};
-   break;
+   chosen={pt,ll};break;
   }
   if(!chosen)continue;
-
   placed.push(chosen.pt);
   L.marker(chosen.ll,{
    pane:"letters",interactive:false,
@@ -430,119 +324,128 @@ function drawLabels(){
   }).addTo(labels);
  }
 }
-
 function animate(t){
- for(const w of pulses){
-  const phase=(t/3600+w.phase)%1;
-  w.pulse.setStyle({
-   opacity:0.42*Math.pow(1-phase,1.4),
-   weight:2+3*phase
+ for(const p of pulses){
+  const phase=(t/3600+p.phase)%1;
+  p.outline.setStyle({
+   opacity:.48*Math.pow(1-phase,1.4),
+   weight:2+4*phase
   });
  }
  frame=requestAnimationFrame(animate);
 }
-
-function localTime(value){
- return new Date(value).toLocaleString("it-IT",{
-  timeZone:"Europe/Rome",
-  day:"2-digit",month:"2-digit",
-  hour:"2-digit",minute:"2-digit"
- });
+async function updateModels(){
+ const ids=["gfs","ecmwf","icon"];
+ try{
+  const r=await fetch(
+   "data/acquisition_report.json?t="+Date.now(),
+   {cache:"no-store"}
+  );
+  if(!r.ok)throw Error("Rapporto non disponibile");
+  const report=await r.json();
+  const age=Date.now()-Date.parse(report.generated_at);
+  const recent=Number.isFinite(age)&&
+   age>=-15*60000&&age<=90*60000;
+  for(const id of ids){
+   const el=document.getElementById("light-"+id);
+   el.className="light";
+   if(recent&&report[id]==="success")
+    el.classList.add("ok");
+   else if(recent&&report[id]==="failure")
+    el.classList.add("fail");
+   el.title=id.toUpperCase()+": "+
+    (recent?String(report[id]||"sconosciuto"):"stato non recente");
+  }
+  document.getElementById("models-note").textContent=
+   recent?"Ultima acquisizione":"Stato non aggiornato";
+ }catch(e){
+  for(const id of ids)
+   document.getElementById("light-"+id).className="light";
+  document.getElementById("models-note").textContent=
+   "Stato non disponibile";
  }
- 
+}
 async function load(){
  const id=++requestId,h=horizon;
  clear();
- status.textContent="CARICAMENTO GFS +"+h+" ORE";
-
+ status.textContent="CARICAMENTO +"+h+" ORE...";
  try{
   const response=await fetch(
    "data/forecast/"+h+"h.geojson?t="+Date.now(),
    {cache:"no-store"}
   );
   if(!response.ok)throw Error("HTTP "+response.status);
-
   const data=await response.json();
   if(id!==requestId)return;
   const m=data.metadata||{};
-
-  if(
-   data.type!=="FeatureCollection"||
+  if(data.type!=="FeatureCollection"||
    m.status!=="ready"||
    Number(m.horizon_hours)!==h||
    m.probability_calibrated!==false||
    m.land_mask!==true||
    m.geometry_type!=="merged_land_clipped_polygons"||
-   !Array.isArray(data.features)
-  ){
-   throw Error("Dati terrestri non disponibili");
-  }
-
+   !Array.isArray(data.features))
+   throw Error("Prodotto non valido");
   const generated=Date.parse(m.generated_at);
   const valid=Date.parse(m.forecast_valid_at);
-  if(
-   !Number.isFinite(generated)||
+  if(!Number.isFinite(generated)||
    !Number.isFinite(valid)||
    Date.now()-generated>12*3600000||
    generated-Date.now()>15*60000||
-   valid<Date.now()
-  ){
+   valid<=Date.now())
    throw Error("Dati scaduti");
-  }
-
   for(const feature of data.features){
    if(!feature||!feature.geometry)continue;
    if(!["Polygon","MultiPolygon"].includes(
-    feature.geometry.type
-   ))continue;
-   const item=drawArea(feature);
-   if(item)items.push(item);
+    feature.geometry.type))continue;
+   drawArea(feature);
   }
-
   drawLabels();
+  const model=String(
+   m.selected_model||m.model_id||"N/D"
+  ).toUpperCase();
+  const method=m.selection_method==="historical_iride"?
+   "VERIFICA STORICA":"SELEZIONE PROVVISORIA";
   status.textContent=
-   "GFS SPERIMENTALE · "+items.length+
+   model+" · +"+h+"H · "+items.length+
    " AREE TERRESTRI · VALIDO "+
-   localTime(m.forecast_valid_at)+
-   " · NON CALIBRATO";
-
-  if(pulses.length&&!reduced){
+   localTime(m.forecast_valid_at)+" · "+
+   method+" · NON CALIBRATO";
+  if(pulses.length&&!reduced)
    frame=requestAnimationFrame(animate);
-  }
  }catch(error){
   if(id!==requestId)return;
   clear();
   status.textContent=
-   "DATI GFS NON DISPONIBILI · "+error.message;
+   "PREVISIONE +"+h+"H NON DISPONIBILE · "+
+   error.message;
   console.error("SIBILLA:",error);
  }
 }
-
-document.querySelectorAll(".tabs button").forEach(button=>{
- button.onclick=()=>{
-  horizon=Number(button.dataset.h);
+document.querySelectorAll(".tabs button").forEach(b=>{
+ b.onclick=()=>{
+  horizon=Number(b.dataset.h);
   document.querySelectorAll(".tabs button").forEach(
-   b=>b.classList.remove("active")
+   x=>x.classList.remove("active")
   );
-  button.classList.add("active");
+  b.classList.add("active");
   load();
  };
 });
-
 const toggle=document.getElementById("toggle");
 const legend=document.getElementById("legend");
-
 toggle.onclick=()=>{
  const closed=legend.classList.toggle("closed");
  toggle.setAttribute("aria-expanded",String(!closed));
  toggle.textContent=closed?"Legenda":"Chiudi legenda";
 };
-
 map.on("zoomend moveend",()=>{
  if(items.length)drawLabels();
 });
-
+updateModels();
 load();
+setInterval(updateModels,60000);
+setInterval(load,300000);
 })();
 </script>
 </body>
