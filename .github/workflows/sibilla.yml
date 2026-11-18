@@ -77,8 +77,44 @@ jobs:
         run: |
           python backend/ecmwf_engine.py
 
-      - name: Acquire DWD ICON-EU
+      # ICON-2I: quattro tentativi giornalieri.
+      # Non modifica gli orizzonti previsionali.
+      # Gli avvii manuali e push eseguono ICON.
+      - name: Decide ICON-2I acquisition
+        id: icon_gate
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" != "schedule" ]; then
+            echo "run_icon=true" >> "$GITHUB_OUTPUT"
+            echo "ICON-2I: manual or push run"
+            exit 0
+          fi
+
+          HOUR="$(date -u +%H)"
+          MINUTE="$(date -u +%M)"
+
+          # Finestra di due ore per tollerare
+          # ritardi di GitHub Actions.
+          # Un solo tentativo per finestra:
+          # viene scelto il minuto 11 o 41.
+          case "$HOUR:$MINUTE" in
+            02:11|02:41|08:11|08:41|14:11|14:41|20:11|20:41)
+              echo "run_icon=true" >> "$GITHUB_OUTPUT"
+              echo "ICON-2I: acquisition window"
+              ;;
+            *)
+              echo "run_icon=false" >> "$GITHUB_OUTPUT"
+              echo "ICON-2I: skipped to reduce requests"
+              ;;
+          esac
+
+      - name: Acquire ItaliaMeteo ICON-2I
         id: icon
+        if: steps.icon_gate.outputs.run_icon == 'true'
         continue-on-error: true
         timeout-minutes: 12
         run: |
@@ -158,6 +194,7 @@ jobs:
           GFS_RESULT: ${{ steps.gfs.outcome }}
           ECMWF_RESULT: ${{ steps.ecmwf.outcome }}
           ICON_RESULT: ${{ steps.icon.outcome }}
+          ICON_GATE: ${{ steps.icon_gate.outputs.run_icon }}
           IRIDE_RESULT: ${{ steps.iride.outcome }}
           SELECTOR_RESULT: ${{ steps.selector.outcome }}
           VALIDATION_RESULT: ${{ steps.validation.outcome }}
@@ -175,6 +212,9 @@ jobs:
               "gfs": os.environ.get("GFS_RESULT"),
               "ecmwf": os.environ.get("ECMWF_RESULT"),
               "icon": os.environ.get("ICON_RESULT"),
+              "icon_scheduled": (
+                  os.environ.get("ICON_GATE") == "true"
+              ),
               "iride": os.environ.get("IRIDE_RESULT"),
               "selector": os.environ.get("SELECTOR_RESULT"),
               "validation": os.environ.get("VALIDATION_RESULT"),
@@ -203,21 +243,18 @@ jobs:
           git config user.email \
             "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Copia temporanea dei prodotti appena generati.
           SNAPSHOT="$(mktemp -d)"
           trap 'rm -rf "$SNAPSHOT"' EXIT
 
           mkdir -p "$SNAPSHOT/data"
           cp -a data/. "$SNAPSHOT/data/"
 
-          # Registra le previsioni eliminate dal selettore.
           for h in 4 8 16 24 36; do
             if [ ! -f "data/forecast/${h}h.geojson" ]; then
               touch "$SNAPSHOT/missing_${h}"
             fi
           done
 
-          # Nessun rebase: si riparte dall'ultimo main.
           for attempt in 1 2 3 4 5; do
             echo "Publication attempt $attempt"
 
