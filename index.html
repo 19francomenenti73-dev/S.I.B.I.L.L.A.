@@ -151,9 +151,36 @@ box-shadow:0 1px 5px #05152299}
 .wx-flash{animation:wx-flash 6s ease-in-out infinite}
 @keyframes wx-flash{0%,79%,86%,100%{opacity:.6}80%,83%{opacity:1}}
 @media(prefers-reduced-motion:reduce){.wx-flash{animation:none}}
+
+/* Embedded mobile cockpit: affects only Dashboard iframe, not standalone page. */
+html.embedded-mobile header{top:3px;width:calc(100% - 8px);filter:none}
+html.embedded-mobile .brand-wrap{padding:2px 5px;gap:4px;border-radius:9px}
+html.embedded-mobile .sibilla-icon{width:27px;height:31px}
+html.embedded-mobile .brand{font-size:clamp(14px,4.3vw,19px);letter-spacing:1px}
+html.embedded-mobile .acronym{font-size:6px;line-height:1.1}
+html.embedded-mobile .subtitle{display:none}
+html.embedded-mobile .tabs{margin-top:3px;padding:3px;gap:2px;border-radius:9px}
+html.embedded-mobile .tabs button{font-size:10px;padding:7px 1px;border-radius:7px}
+html.embedded-mobile .models{top:74px;right:4px;width:99px;padding:5px;border-radius:9px}
+html.embedded-mobile .models-title{font-size:8px;letter-spacing:0}
+html.embedded-mobile .model-row{font-size:8px;padding:2px 0}
+html.embedded-mobile .models-note{font-size:7px}
+html.embedded-mobile .light{width:7px;height:7px}
+html.embedded-mobile .status{left:4px;bottom:62px;max-width:calc(100% - 115px);font-size:8px;padding:4px 6px}
+html.embedded-mobile .credits{left:4px;bottom:19px;max-width:calc(100% - 115px);font-size:7px;line-height:1.2;padding:4px;max-height:40px;overflow:auto}
+html.embedded-mobile .mini-legend{right:4px;bottom:62px;padding:5px;gap:4px}
+html.embedded-mobile .mini-key{font-size:9px}
+html.embedded-mobile .toggle{right:4px;bottom:20px;font-size:10px;padding:6px}
+html.embedded-mobile .legend{right:4px;bottom:55px;top:auto;width:min(230px,70%);max-height:52%;padding:8px}
+html.embedded-mobile .legend h2{font-size:14px}
+html.embedded-mobile .item{padding:5px 0;gap:6px}
+html.embedded-mobile .letter{width:32px;min-width:32px;height:32px;font-size:18px}
+html.embedded-mobile .item strong{font-size:11px}
+html.embedded-mobile .item small{font-size:9px}
 </style>
 </head>
 <body>
+<script>if(new URLSearchParams(location.search).has("embed") && matchMedia("(max-width:700px)").matches)document.documentElement.classList.add("embedded-mobile");</script>
 <div id="map"></div>
 <header>
 <div class="brand-wrap">
