@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "product": "SIBILLA_SINOTTICA_DIAGNOSTIC",
+  "mode": "read_only",
+  "forecast_engine_connected": false,
+  "source": "NOAA/NCEP GFS 0.25°",
+  "source_url": "https://19francomenenti73-dev.github.io/Dashboard-Enterprise/data/sinottica.json",
+  "acquired_utc": "2026-11-22T03:03:24.051046+00:00",
+  "model_generated_utc": "2026-11-22T02:28:10.837483+00:00",
+  "frames": [
+    {
+      "run_utc": "2026-11-21T18:00:00+00:00",
+      "valid_utc": "2026-11-22T00:00:00+00:00",
+      "forecast_hour": 6,
+      "fronts_validated": false,
+      "front_candidates_present": true,
+      "jet_250hpa_present": true,
+      "wind_10m_present": true,
+      "pressure_present": true,
+      "isobars_present": true
+    },
+    {
+      "run_utc": "2026-11-21T18:00:00+00:00",
+      "valid_utc": "2026-11-22T03:00:00+00:00",
+      "forecast_hour": 9,
+      "fronts_validated": false,
+      "front_candidates_present": true,
+      "jet_250hpa_present": true,
+      "wind_10m_present": true,
+      "pressure_present": true,
+      "isobars_present": true
+    },
+    {
+      "run_utc": "2026-11-21T18:00:00+00:00",
+      "valid_utc": "2026-11-22T06:00:00+00:00",
+      "forecast_hour": 12,
+      "fronts_validated": false,
+      "front_candidates_present": true,
+      "jet_250hpa_present": true,
+      "wind_10m_present": true,
+      "pressure_present": true,
+      "isobars_present": true
+    },
+    {
+      "run_utc": "2026-11-21T18:00:00+00:00",
+      "valid_utc": "2026-11-22T09:00:00+00:00",
+      "forecast_hour": 15,
+      "fronts_validated": false,
+      "front_candidates_present": true,
+      "jet_250hpa_present": true,
+      "wind_10m_present": true,
+      "pressure_present": true,
+      "isobars_present": true
+    },
+    {
+      "run_utc": "2026-11-21T18:00:00+00:00",
+      "valid_utc": "2026-11-22T12:00:00+00:00",
+      "forecast_hour": 18,
+      "fronts_validated": false,
+      "front_candidates_present": true,
+      "jet_250hpa_present": true,
+      "wind_10m_present": true,
+      "pressure_present": true,
+      "isobars_present": true
+    },
+    {
+      "run_utc": "2026-11-21T18:00:00+00:00",
+      "valid_utc": "2026-11-22T15:00:00+00:00",
+      "forecast_hour": 21,
+      "fronts_validated": false,
+      "front_candidates_present": true,
+      "jet_250hpa_present": true,
+      "wind_10m_present": true,
+      "pressure_present": true,
+      "isobars_present": true
+    },
+    {
+      "run_utc": "2026-11-21T18:00:00+00:00",
+      "valid_utc": "2026-11-22T18:00:00+00:00",
+      "forecast_hour": 24,
+      "fronts_validated": false,
+      "front_candidates_present": true,
+      "jet_250hpa_present": true,
+      "wind_10m_present": true,
+      "pressure_present": true,
+      "isobars_present": true
+    }
+  ],
+  "frame_count": 7,
+  "note": "Model forecasts, not observations. Front candidates are not validated fronts."
+}
