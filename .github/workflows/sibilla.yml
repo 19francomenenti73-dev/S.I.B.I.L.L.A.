@@ -55,7 +55,8 @@ jobs:
             backend/ecmwf_engine.py \
             backend/icon_engine.py \
             backend/model_selector.py \
-            backend/sinottica_intake.py
+            backend/sinottica_intake.py \
+            backend/source_alignment.py
 
       - name: Acquire IRIDE observations
         id: iride
@@ -127,6 +128,13 @@ jobs:
         timeout-minutes: 12
         run: |
           python backend/icon_engine.py
+
+      - name: Align ARGO observations with IRIDE and SINOTTICA
+        id: argo
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          python backend/source_alignment.py
 
       - name: Select available model products
         id: selector
@@ -205,6 +213,7 @@ jobs:
           ICON_RESULT: ${{ steps.icon.outcome }}
           ICON_GATE: ${{ steps.icon_gate.outputs.run_icon }}
           IRIDE_RESULT: ${{ steps.iride.outcome }}
+          ARGO_RESULT: ${{ steps.argo.outcome }}
           SELECTOR_RESULT: ${{ steps.selector.outcome }}
           VALIDATION_RESULT: ${{ steps.validation.outcome }}
         run: |
@@ -226,6 +235,7 @@ jobs:
                   os.environ.get("ICON_GATE") == "true"
               ),
               "iride": os.environ.get("IRIDE_RESULT"),
+              "argo": os.environ.get("ARGO_RESULT"),
               "selector": os.environ.get("SELECTOR_RESULT"),
               "validation": os.environ.get("VALIDATION_RESULT"),
               "note": (
