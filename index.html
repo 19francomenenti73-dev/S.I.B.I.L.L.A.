@@ -142,6 +142,15 @@ box-shadow:0 1px 5px #05152299}
 .wx-letter-a{color:#e23fff}.wx-letter-b{color:#73b0ff}.wx-letter-c{color:#00edfa}
 @keyframes wx-float{0%,100%{transform:translateY(1px)}50%{transform:translateY(-1px)}}
 @media(prefers-reduced-motion:reduce){.wx-cloud{animation:none}}
+
+/* V3: higher visibility and class-specific atmospheric silhouettes. */
+.wx{opacity:1!important;filter:drop-shadow(0 2px 2px #10243cbb) drop-shadow(0 0 1px #edf7ff88)}
+.wx-a svg{filter:contrast(1.13)}
+.wx-b svg{filter:contrast(1.08)}
+.wx-c svg{filter:contrast(1.12)}
+.wx-flash{animation:wx-flash 6s ease-in-out infinite}
+@keyframes wx-flash{0%,79%,86%,100%{opacity:.6}80%,83%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.wx-flash{animation:none}}
 </style>
 </head>
 <body>
@@ -314,15 +323,22 @@ if(!reduced)pulses.push({outline,phase:(pulses.length%4)/4});
 items.push({feature,cls,color});
 }
 function weatherSymbol(cls){
-const dark=cls==="A",mid=cls==="B";
-const top=dark?"#b9c5d1":mid?"#d6e0e7":"#f0f5f7";
-const base=dark?"#52647a":mid?"#8398a8":"#b9cbd3";
-return '<div class="wx wx-'+cls.toLowerCase()+'"><svg viewBox="0 0 64 48" aria-hidden="true">'+
-'<defs><linearGradient id="cloud-'+cls+'" x2="0" y2="1"><stop stop-color="'+top+'"/><stop offset="1" stop-color="'+base+'"/></linearGradient></defs>'+
-'<g class="wx-cloud"><path d="M10 38C2 36 3 26 11 23c2-10 14-14 22-8 9-5 20 1 21 11 11 3 10 14-1 15H13Z" fill="url(#cloud-'+cls+')" stroke="#e8f0f4" stroke-width=".8" stroke-opacity=".7"/>'+
-'<path d="M14 25q7-8 16-5M37 17q8-2 12 6" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2"/></g>'+
-(dark?'<path d="M32 31l-5 9h6l-2 7 11-13h-7l3-3" fill="#e4eaf1" opacity=".7"/>':mid?'<path d="M20 43v4m12-4v4m12-4v4" stroke="#b3cfdf" stroke-width="1.5" opacity=".6"/>':'')+
-'</svg></div>';
+/* Three visually distinct schematic cloud types. They represent potential, not observations. */
+const clouds={
+A:'<path d="M7 39Q-1 31 8 25Q8 18 16 16Q19 6 29 8Q36-1 46 7Q56 7 57 19Q68 23 60 36Q58 42 48 42H14Q10 42 7 39Z" fill="#526478" stroke="#e6eef6" stroke-width="1.7"/>'+
+'<path d="M16 22Q21 14 29 16Q35 7 43 13Q50 12 52 22" fill="none" stroke="#c4d3e0" stroke-width="2.2" stroke-linecap="round"/>'+
+'<path d="M15 37H53" stroke="#293b51" stroke-width="4" opacity=".65"/>'+
+'<path class="wx-flash" d="M33 29L26 40H33L29 48L44 34H36L40 29Z" fill="#f5f7ff" stroke="#a2caff" stroke-width=".9"/>',
+B:'<path d="M9 40Q2 35 9 28Q11 23 19 23Q17 14 27 12Q29 3 39 7Q49 8 49 19Q59 18 60 29Q66 39 55 42H15Z" fill="#879baa" stroke="#eaf3f8" stroke-width="1.7"/>'+
+'<path d="M21 25Q24 16 32 18Q34 10 41 13Q46 15 46 23" fill="none" stroke="#e2edf4" stroke-width="2.3" stroke-linecap="round"/>'+
+'<path d="M16 38Q34 42 54 37" fill="none" stroke="#536c82" stroke-width="3" opacity=".65"/>',
+C:'<path d="M10 38Q4 33 11 28Q14 24 21 26Q25 17 35 20Q43 16 48 25Q59 24 59 34Q59 41 51 41H18Q12 41 10 38Z" fill="#e9f1f5" stroke="#7c9fb2" stroke-width="1.6"/>'+
+'<path d="M20 28Q28 22 34 27Q41 22 46 28" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>'+
+'<path d="M18 38Q36 40 51 37" fill="none" stroke="#a8c2cf" stroke-width="2" opacity=".8"/>'
+};
+return '<div class="wx wx-'+cls.toLowerCase()+'" aria-label="Potenziale convettivo '+cls+'">'+
+'<svg viewBox="0 0 68 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+
+'<g class="wx-cloud">'+clouds[cls]+'</g></svg></div>';
 }
 function labelSymbol(cls){
 return '<div class="wx-letter wx-letter-'+cls.toLowerCase()+'">'+cls+'</div>';
