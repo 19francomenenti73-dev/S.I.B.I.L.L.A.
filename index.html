@@ -71,6 +71,47 @@ header{position:absolute;z-index:1000;top:5px;left:50%;transform:translateX(-50%
 @media(prefers-reduced-motion:reduce){
 .brand,.sibilla-orbit{animation:none}
 }
+
+/* SIBILLA cockpit refresh: presentation only, no forecast changes */
+:root{--panel:rgba(7,20,38,.89);--edge:rgba(150,195,229,.32)}
+#map{filter:saturate(.82) contrast(1.035)}
+header{top:10px;width:min(96%,680px);filter:drop-shadow(0 7px 15px #07172a65)}
+.brand-wrap{padding:4px 14px 2px;border-radius:16px;background:linear-gradient(100deg,rgba(4,18,36,.88),rgba(9,30,52,.72));border:1px solid var(--edge);backdrop-filter:blur(12px)}
+.brand{letter-spacing:4px}
+.subtitle{margin-top:5px;color:#e1f4ff;font-weight:700;letter-spacing:2px}
+.tabs{margin-top:9px;background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:5px;box-shadow:0 8px 25px #001b3480;backdrop-filter:blur(12px)}
+.tabs button{border-radius:11px;transition:background .2s,box-shadow .2s;color:#d7e7f4}
+.tabs button:hover{background:#284a71}
+.tabs button.active{background:linear-gradient(125deg,#007aab,#5630aa);box-shadow:inset 0 1px 0 #ffffff60,0 0 14px #428aff55}
+.models,.legend,.status,.credits,.mini-legend{background:var(--panel);border:1px solid var(--edge);box-shadow:0 8px 24px #00152855;backdrop-filter:blur(12px)}
+.models{top:154px;width:154px;border-radius:15px;padding:11px 12px}
+.models-title{font-size:10px;color:#a9dfff;letter-spacing:1px}
+.model-row{font-size:11px;padding:5px 0}
+.model-separator{height:1px;background:#b8d8ef30;margin:5px 0}
+.models-note{font-size:9px}
+.legend{top:325px;border-radius:16px;max-height:calc(100% - 375px)}
+.legend h2{font-size:18px}
+.letter{border-radius:50%;width:46px;min-width:46px;height:46px;font-size:24px}
+.toggle{border-radius:12px;background:#0a2440ed;border-color:#91b6d4}
+.status{border-radius:12px;max-width:min(64%,440px)}
+.credits{border-radius:12px}
+.sib-label span{text-shadow:0 2px 4px #000,0 0 9px #000}
+@media(max-width:650px){
+ header{top:5px}
+ .brand-wrap{padding:3px 5px}
+ .brand{letter-spacing:1.5px}
+ .models{top:128px;right:6px;width:119px;padding:8px}
+ .model-row{font-size:9px;padding:3px 0}
+ .legend{top:auto;bottom:145px;max-height:45vh}
+ .status{bottom:145px}
+ .tabs{margin-top:5px}
+ .tabs button{padding:9px 1px}
+}
+@media(max-height:520px){
+ .models{top:108px}
+ .legend{top:auto;bottom:70px;max-height:48vh}
+ .credits{max-height:36px;overflow:auto}
+}
 </style>
 </head>
 <body>
@@ -115,10 +156,13 @@ header{position:absolute;z-index:1000;top:5px;left:50%;transform:translateX(-50%
 </nav>
 </header>
 <aside class="models" aria-label="Stato dei modelli">
-<div class="models-title">MODELLI</div>
+<div class="models-title">RETE DATI · LIVE</div>
 <div class="model-row">GFS <i class="light" id="light-gfs"></i></div>
 <div class="model-row">ECMWF <i class="light" id="light-ecmwf"></i></div>
 <div class="model-row">ICON-2I <i class="light" id="light-icon"></i></div>
+<div class="model-separator"></div>
+<div class="model-row">IRIDE radar <i class="light" id="light-iride"></i></div>
+<div class="model-row">SINOTTICA <i class="light" id="light-sinottica"></i></div>
 <div class="models-note" id="models-note">Verifica in corso</div>
 </aside>
 <aside class="legend closed" id="legend">
@@ -285,7 +329,7 @@ weight:2+4*phase
 frame=requestAnimationFrame(animate);
 }
 async function updateModels(){
-const ids=["gfs","ecmwf","icon"];
+const ids=["gfs","ecmwf","icon","iride","sinottica"];
 try{
 const r=await fetch(
 "data/acquisition_report.json?t="+Date.now(),
