@@ -352,6 +352,7 @@ border-radius:0 0 9px 9px!important;z-index:1250!important}
 <div class="model-row">ICON-2I <i class="light" id="light-icon"></i></div>
 <div class="model-separator"></div>
 <div class="model-row">IRIDE radar <i class="light" id="light-iride"></i></div>
+<div class="model-row">A.R.G.O. vettori <i class="light" id="light-argo"></i></div>
 <div class="model-row">SINOTTICA <i class="light" id="light-sinottica"></i></div>
 <div class="models-note" id="models-note">Verifica in corso</div></div>
 </aside>
@@ -590,7 +591,7 @@ weight:2+4*phase
 frame=requestAnimationFrame(animate);
 }
 async function updateModels(){
-const ids=["gfs","ecmwf","icon","iride","sinottica"];
+const ids=["gfs","ecmwf","icon","iride","argo","sinottica"];
 try{
 const r=await fetch(
 "data/acquisition_report.json?t="+Date.now(),
