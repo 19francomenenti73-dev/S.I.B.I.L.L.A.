@@ -112,6 +112,23 @@ header{top:10px;width:min(96%,680px);filter:drop-shadow(0 7px 15px #07172a65)}
  .legend{top:auto;bottom:70px;max-height:48vh}
  .credits{max-height:36px;overflow:auto}
 }
+
+/* Restrained atmospheric symbology; class remains explicit. */
+.wx-label{background:transparent!important;border:0!important}
+.wx{position:relative;width:100%;height:100%;filter:drop-shadow(0 2px 3px #10283e88)}
+.wx svg{display:block;width:100%;height:100%;overflow:visible}
+.wx-class{position:absolute;right:-2px;bottom:0;min-width:19px;height:19px;
+display:grid;place-items:center;border:1.5px solid;border-radius:50%;
+background:#071b2bea;font-size:11px;font-weight:900;text-shadow:0 1px 2px #000}
+.wx-cloud{transform-origin:50% 62%;animation:wx-breathe 7s ease-in-out infinite}
+.wx-a .wx-cloud{animation-duration:5s}
+.wx-b .wx-cloud{animation-duration:6s}
+.wx-c .wx-cloud{animation-duration:9s}
+.wx-pulse{animation:wx-glimmer 5s ease-in-out infinite}
+.wx-growth{animation:wx-glimmer 6s ease-in-out infinite}
+@keyframes wx-breathe{0%,100%{transform:translateY(1px) scale(.985)}50%{transform:translateY(-1px) scale(1.01)}}
+@keyframes wx-glimmer{0%,65%,100%{opacity:.55}70%,80%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.wx-cloud,.wx-pulse,.wx-growth{animation:none}}
 </style>
 </head>
 <body>
@@ -283,9 +300,30 @@ style:{color,weight:5,opacity:.12,fill:false}
 if(!reduced)pulses.push({outline,phase:(pulses.length%4)/4});
 items.push({feature,cls,color});
 }
+function weatherSymbol(cls){
+/* Schematic atmospheric icons: probability class, not observed cloud or lightning. */
+const heavy=cls==="A",medium=cls==="B";
+const shade=heavy?"#657b93":medium?"#94a7b9":"#b7c9d5";
+const light=heavy?"#d0dae3":medium?"#e1e8ec":"#f4f7f8";
+const accent=colors[cls];
+return '<div class="wx wx-'+cls.toLowerCase()+'" aria-label="Potenziale convettivo '+cls+'">'+
+'<svg viewBox="0 0 80 65" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+
+'<defs><linearGradient id="wx-'+cls+'-cloud" x1="0" y1="0" x2=".25" y2="1">'+
+'<stop stop-color="'+light+'"/><stop offset=".65" stop-color="'+shade+'"/>'+
+'<stop offset="1" stop-color="#51677b"/></linearGradient></defs>'+
+'<g class="wx-cloud">'+
+'<path d="M14 49C4 47 4 32 16 28c2-12 17-19 27-11 12-3 23 6 23 17 14 5 11 19-2 20H18C16 54 14 52 14 49Z" '+
+'fill="url(#wx-'+cls+'-cloud)" stroke="#f1f7fb" stroke-opacity=".65" stroke-width="1.1"/>'+
+'<path d="M18 29c7-4 11-2 16 0M42 18c9 0 13 5 14 10" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>'+
+'</g>'+
+(heavy?'<path class="wx-pulse" d="M38 41l-7 12h7l-3 10 16-18h-8l4-4" fill="#e7f4ff" stroke="#aec5dd" stroke-width=".7"/>':
+medium?'<path class="wx-growth" d="M27 58v-7m13 9v-8m12 6v-7" stroke="#b4d8e7" stroke-width="2" stroke-linecap="round" opacity=".75"/>':'')+
+'</svg><span class="wx-class" style="border-color:'+accent+';color:'+accent+'">'+cls+'</span></div>';
+}
 function drawLabels(){
 labels.clearLayers();
 const placed=[];
+const iconSize=map.getZoom()>=7?62:map.getZoom()>=5?52:42;
 for(const item of [...items].sort((a,b)=>rank[a.cls]-rank[b.cls])){
 const p=item.feature.properties||{};
 const lat=Number(p.label_lat),lon=Number(p.label_lon);
@@ -294,7 +332,7 @@ if(p.label_lat==null||p.label_lon==null||
 if(!contains(item.feature.geometry,lat,lon))continue;
 const origin=map.latLngToContainerPoint([lat,lon]);
 const candidates=[[0,0]];
-for(const radius of [20,40,60,80]){
+for(const radius of [22,42,62,82]){
 for(let a=0;a<8;a++){
 const angle=a*Math.PI/4;
 candidates.push([Math.cos(angle)*radius,Math.sin(angle)*radius]);
@@ -304,7 +342,7 @@ for(const [dx,dy] of candidates){
 const pt=L.point(origin.x+dx,origin.y+dy);
 const ll=map.containerPointToLatLng(pt);
 if(!contains(item.feature.geometry,ll.lat,ll.lng))continue;
-if(placed.some(q=>q.distanceTo(pt)<39))continue;
+if(placed.some(q=>q.distanceTo(pt)<iconSize+5))continue;
 chosen={pt,ll};break;
 }
 if(!chosen)continue;
@@ -312,9 +350,9 @@ placed.push(chosen.pt);
 L.marker(chosen.ll,{
 pane:"letters",interactive:false,
 icon:L.divIcon({
-className:"sib-label",
-html:'<span style="color:'+item.color+'">'+item.cls+"</span>",
-iconSize:[38,38],iconAnchor:[19,19]
+className:"sib-label wx-label",
+html:weatherSymbol(item.cls),
+iconSize:[iconSize,iconSize],iconAnchor:[iconSize/2,iconSize/2]
 })
 }).addTo(labels);
 }}
