@@ -177,11 +177,20 @@ html.embedded-mobile .item{padding:5px 0;gap:6px}
 html.embedded-mobile .letter{width:32px;min-width:32px;height:32px;font-size:18px}
 html.embedded-mobile .item strong{font-size:11px}
 html.embedded-mobile .item small{font-size:9px}
+
+/* Internal fullscreen control, available standalone and inside Dashboard. */
+#sib-fullscreen{position:absolute;z-index:1300;top:148px;left:8px;
+ width:39px;height:39px;display:grid;place-items:center;border-radius:11px;
+ border:1px solid #77d9ff;background:#071b31eb;color:#c6f6ff;
+ box-shadow:0 2px 12px #001b3b88;font-size:23px;font-weight:700;cursor:pointer}
+#sib-fullscreen:focus-visible{outline:2px solid white;outline-offset:2px}
+html.embedded-mobile #sib-fullscreen{top:76px;left:4px;width:34px;height:34px;font-size:21px}
 </style>
 </head>
 <body>
 <script>if(new URLSearchParams(location.search).has("embed") && matchMedia("(max-width:700px)").matches)document.documentElement.classList.add("embedded-mobile");</script>
 <div id="map"></div>
+<button id="sib-fullscreen" type="button" aria-label="Espandi S.I.B.I.L.L.A. a schermo intero" title="Schermo intero">⛶</button>
 <header>
 <div class="brand-wrap">
 <svg class="sibilla-icon" viewBox="0 0 100 110" role="img" aria-label="Sfera meteorologica SIBILLA con temporale">
@@ -543,6 +552,40 @@ updateModels();
 load();
 setInterval(updateModels,60000);
 setInterval(load,300000);
+})();
+</script>
+
+<script>
+(function(){
+ const button=document.getElementById("sib-fullscreen");
+ const embedded=new URLSearchParams(location.search).has("embed");
+ const standalone="https://19francomenenti73-dev.github.io/S.I.B.I.L.L.A./";
+ function sync(){
+   const full=!!document.fullscreenElement;
+   button.textContent=full?"✕":"⛶";
+   button.setAttribute("aria-label",full?"Esci dallo schermo intero":"Espandi S.I.B.I.L.L.A. a schermo intero");
+   button.title=full?"Esci dallo schermo intero":"Schermo intero";
+ }
+ button.addEventListener("click",async function(){
+   if(document.fullscreenElement){
+     try{await document.exitFullscreen()}catch(e){console.warn(e)}
+     return;
+   }
+   try{
+     if(!document.documentElement.requestFullscreen)throw Error("Fullscreen non supportato");
+     await document.documentElement.requestFullscreen();
+   }catch(error){
+     /* In restricted iframe/mobile browsers, open standalone as fallback. */
+     if(embedded){
+       const opened=window.open(standalone,"_blank","noopener,noreferrer");
+       if(!opened)window.location.href=standalone;
+     }else{
+       button.title="Schermo intero non disponibile in questo browser";
+     }
+   }
+ });
+ document.addEventListener("fullscreenchange",sync);
+ sync();
 })();
 </script>
 </body>
