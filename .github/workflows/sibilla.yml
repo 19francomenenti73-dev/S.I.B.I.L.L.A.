@@ -56,7 +56,8 @@ jobs:
             backend/icon_engine.py \
             backend/model_selector.py \
             backend/sinottica_intake.py \
-            backend/source_alignment.py
+            backend/source_alignment.py \
+            backend/fusion_context.py
 
       - name: Acquire IRIDE observations
         id: iride
@@ -143,6 +144,13 @@ jobs:
         run: |
           python backend/model_selector.py
 
+      - name: Correlate ARGO IRIDE and SINOTTICA with forecast footprints
+        id: fusion
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          python backend/fusion_context.py
+
       - name: Validate published forecasts
         id: validation
         run: |
@@ -214,6 +222,7 @@ jobs:
           ICON_GATE: ${{ steps.icon_gate.outputs.run_icon }}
           IRIDE_RESULT: ${{ steps.iride.outcome }}
           ARGO_RESULT: ${{ steps.argo.outcome }}
+          FUSION_RESULT: ${{ steps.fusion.outcome }}
           SELECTOR_RESULT: ${{ steps.selector.outcome }}
           VALIDATION_RESULT: ${{ steps.validation.outcome }}
         run: |
@@ -236,6 +245,7 @@ jobs:
               ),
               "iride": os.environ.get("IRIDE_RESULT"),
               "argo": os.environ.get("ARGO_RESULT"),
+              "fusion": os.environ.get("FUSION_RESULT"),
               "selector": os.environ.get("SELECTOR_RESULT"),
               "validation": os.environ.get("VALIDATION_RESULT"),
               "note": (
