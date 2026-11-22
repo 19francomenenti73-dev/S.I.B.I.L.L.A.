@@ -239,6 +239,35 @@ left:5px!important;max-width:calc(100% - 135px)!important;font-size:9px!importan
 @media(max-width:650px){header{top:27px!important}}
 html.sib-fullscreen header{top:27px!important}
 html.embedded-mobile #sib-fullscreen,html.sib-fullscreen #sib-fullscreen{top:78px!important}
+
+/* V5 mobile-first map: compact top bar, restrained legend, no floating forecast panel. */
+header,html.embedded-mobile header,html.sib-fullscreen header{top:28px!important;width:calc(100% - 12px)!important;max-width:680px!important}
+.brand-wrap,html.embedded-mobile .brand-wrap,html.sib-fullscreen .brand-wrap{
+min-height:39px!important;padding:2px 7px!important;gap:5px!important;border-radius:10px!important}
+.sibilla-icon,html.embedded-mobile .sibilla-icon,html.sib-fullscreen .sibilla-icon{width:29px!important;height:33px!important}
+.brand,html.embedded-mobile .brand,html.sib-fullscreen .brand{font-size:clamp(15px,4.3vw,22px)!important;letter-spacing:1px!important}
+.acronym,html.embedded-mobile .acronym,html.sib-fullscreen .acronym{display:none!important}
+.tabs,html.embedded-mobile .tabs,html.sib-fullscreen .tabs{margin-top:3px!important;padding:2px!important;gap:2px!important;border-radius:9px!important}
+.tabs button,html.embedded-mobile .tabs button,html.sib-fullscreen .tabs button{
+padding:6px 1px!important;font-size:clamp(10px,2.7vw,13px)!important;border-radius:7px!important}
+#sib-fullscreen,html.embedded-mobile #sib-fullscreen,html.sib-fullscreen #sib-fullscreen{
+top:110px!important;left:6px!important;width:31px!important;height:31px!important;font-size:18px!important}
+.models,html.embedded-mobile .models,html.sib-fullscreen .models{top:3px!important;right:6px!important}
+.status,html.embedded-mobile .status,html.sib-fullscreen .status{display:none!important}
+.mini-legend,html.embedded-mobile .mini-legend,html.sib-fullscreen .mini-legend{
+bottom:66px!important;right:5px!important;padding:3px 6px!important;gap:5px!important;border-radius:8px!important}
+.mini-key,html.embedded-mobile .mini-key,html.sib-fullscreen .mini-key{font-size:10px!important}
+.toggle,html.embedded-mobile .toggle,html.sib-fullscreen .toggle{
+bottom:28px!important;right:5px!important;padding:5px 7px!important;font-size:10px!important;border-radius:8px!important}
+.credits,html.embedded-mobile .credits,html.sib-fullscreen .credits{
+bottom:16px!important;left:5px!important;right:95px!important;width:auto!important;
+max-height:29px!important;overflow:auto!important;font-size:7px!important;line-height:1.25!important;
+padding:3px 5px!important;border-radius:6px!important}
+.legend,html.embedded-mobile .legend,html.sib-fullscreen .legend{
+bottom:66px!important;right:5px!important;top:auto!important;width:min(240px,72vw)!important;
+max-height:50vh!important;padding:8px!important}
+.letter,html.embedded-mobile .letter,html.sib-fullscreen .letter{width:29px!important;min-width:29px!important;height:29px!important;font-size:15px!important}
+.wx-letter{width:21px!important;height:21px!important;font-size:13px!important;border-width:1.5px!important}
 </style>
 </head>
 <body>
@@ -444,10 +473,10 @@ labels.clearLayers();
 const placed=[];
 const z=map.getZoom();
 const iconSize=z>=7?38:z>=5?32:27;
-const separation=z>=7?58:49;
+const separation=z>=7?43:35;
 const bounds=map.getBounds();
 function add(ll,cls,isLetter){
-const size=isLetter?28:iconSize;
+const size=isLetter?23:iconSize;
 L.marker(ll,{pane:"letters",interactive:false,icon:L.divIcon({
 className:"wx-marker",
 html:isLetter?labelSymbol(cls):weatherSymbol(cls),
@@ -482,8 +511,8 @@ const se=map.latLngToContainerPoint(box.getSouthEast());
 const w=map.getSize();
 const left=Math.max(0,Math.min(nw.x,se.x)),right=Math.min(w.x,Math.max(nw.x,se.x));
 const top=Math.max(0,Math.min(nw.y,se.y)),bottom=Math.min(w.y,Math.max(nw.y,se.y));
-const step=z>=7?68:82;
-const maxIcons=z>=7?6:z>=5?4:3;
+const step=z>=7?56:62;
+const maxIcons=z>=7?7:z>=5?5:4;
 let added=0;
 for(let y=top+step/2;y<bottom&&added<maxIcons;y+=step){
 for(let x=left+step/2;x<right&&added<maxIcons;x+=step){
@@ -502,6 +531,19 @@ return contains(geometry,q.lat,q.lng);
 }))continue;
 add(ll,item.cls,false);added++;
 }}
+/* A second, geometry-safe pass prevents all clouds disappearing in slim areas. */
+if(added===0){
+for(const radius of [36,52,68,85,105]){
+if(added)break;
+for(let k=0;k<16;k++){
+const angle=k*Math.PI/8;
+const point=L.point(origin.x+Math.cos(angle)*radius,origin.y+Math.sin(angle)*radius);
+const ll=map.containerPointToLatLng(point);
+if(!bounds.contains(ll)||!contains(geometry,ll.lat,ll.lng))continue;
+if(placed.some(q=>q.distanceTo(point)<32))continue;
+add(ll,item.cls,false);added++;break;
+}}
+}
 }
 }
 function animate(t){
