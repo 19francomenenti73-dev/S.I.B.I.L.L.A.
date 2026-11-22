@@ -212,6 +212,33 @@ width:min(260px,68%)!important;max-height:45%!important;padding:10px!important}
 html.sib-fullscreen .legend h2{font-size:15px!important}
 html.sib-fullscreen .item{padding:6px 0!important}
 html.sib-fullscreen .letter{width:34px!important;min-width:34px!important;height:34px!important;font-size:18px!important}
+
+/* V4 compact source control and persistent attribution strip. */
+.subtitle{display:none!important}
+.models,html.embedded-mobile .models,html.sib-fullscreen .models{top:4px!important;right:6px!important;
+width:auto!important;max-width:250px!important;padding:0!important;border-radius:10px!important;z-index:1300!important}
+.models-trigger{display:flex;align-items:center;justify-content:center;gap:7px;
+border:0;background:transparent;color:#d6f4ff;padding:6px 10px;
+font:bold 10px Arial,sans-serif;cursor:pointer}
+.models-detail{display:none;padding:7px 10px 9px;border-top:1px solid #a6d2e733}
+.models.open .models-detail{display:block}
+.models .models-title,html.sib-fullscreen .models-title{font-size:9px!important}
+.models .model-row,html.sib-fullscreen .models .model-row{font-size:10px!important;padding:4px 0!important}
+.models .light,html.sib-fullscreen .models .light{width:8px!important;height:8px!important}
+.models .models-note{font-size:9px!important}
+.credits,html.embedded-mobile .credits,html.sib-fullscreen .credits{
+display:block!important;left:5px!important;right:5px!important;bottom:18px!important;
+max-width:none!important;width:auto!important;max-height:42px!important;
+overflow-y:auto!important;padding:5px 7px!important;font-size:8px!important;
+line-height:1.25!important;z-index:1150!important;box-sizing:border-box}
+.credits a{color:#b8e5ff!important;text-decoration:underline}
+.status,html.embedded-mobile .status,html.sib-fullscreen .status{bottom:68px!important;
+left:5px!important;max-width:calc(100% - 135px)!important;font-size:9px!important}
+.toggle,html.embedded-mobile .toggle,html.sib-fullscreen .toggle{bottom:69px!important}
+.mini-legend,html.embedded-mobile .mini-legend,html.sib-fullscreen .mini-legend{bottom:110px!important}
+@media(max-width:650px){header{top:27px!important}}
+html.sib-fullscreen header{top:27px!important}
+html.embedded-mobile #sib-fullscreen,html.sib-fullscreen #sib-fullscreen{top:78px!important}
 </style>
 </head>
 <body>
@@ -248,7 +275,7 @@ html.sib-fullscreen .letter{width:34px!important;min-width:34px!important;height
 <div class="acronym">Sistema Integrato Basato sull’Instabilità per la Localizzazione dei Livelli di Attività convettiva</div>
 </div>
 </div>
-<div class="subtitle">SISTEMA SPERIMENTALE DI PREVISIONE CONVETTIVA</div>
+
 <nav class="tabs" aria-label="Orizzonti previsionali">
 <button class="active" data-h="4">4 ORE</button>
 <button data-h="8">8 ORE</button>
@@ -257,15 +284,14 @@ html.sib-fullscreen .letter{width:34px!important;min-width:34px!important;height
 <button data-h="36">36 ORE</button>
 </nav>
 </header>
-<aside class="models" aria-label="Stato dei modelli">
-<div class="models-title">RETE DATI · LIVE</div>
+<aside class="models" aria-label="Stato sorgenti"><button id="models-trigger" class="models-trigger" type="button" aria-expanded="false" aria-controls="models-detail">DATI <i class="light" id="models-overall"></i> <span class="models-arrow">▾</span></button><div class="models-detail" id="models-detail"><div class="models-title">RETE DATI · ACQUISIZIONE</div>
 <div class="model-row">GFS <i class="light" id="light-gfs"></i></div>
 <div class="model-row">ECMWF <i class="light" id="light-ecmwf"></i></div>
 <div class="model-row">ICON-2I <i class="light" id="light-icon"></i></div>
 <div class="model-separator"></div>
 <div class="model-row">IRIDE radar <i class="light" id="light-iride"></i></div>
 <div class="model-row">SINOTTICA <i class="light" id="light-sinottica"></i></div>
-<div class="models-note" id="models-note">Verifica in corso</div>
+<div class="models-note" id="models-note">Verifica in corso</div></div>
 </aside>
 <aside class="legend closed" id="legend">
 <h2>Potenziale convettivo</h2>
@@ -286,7 +312,7 @@ Le aree prive di poligoni non garantiscono assenza di fenomeni.
 <span class="mini-key" style="color:#00edfa">● C</span>
 </div>
 <button class="toggle" id="toggle" aria-expanded="false" aria-controls="legend">Legenda</button>
-<div class="credits">
+<footer class="credits" aria-label="Attribuzioni obbligatorie">
 <strong>S.I.B.I.L.L.A. · Nowcasting Italia</strong><br>
 Modelli:
 <a href="https://www.nco.ncep.noaa.gov/pmb/products/gfs/" target="_blank" rel="noopener noreferrer">NOAA/NCEP GFS</a> ·
@@ -297,7 +323,7 @@ Terre emerse: <a href="https://www.naturalearthdata.com/" target="_blank" rel="n
 Cartografia: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a><br>
 Dati rielaborati: aggregazione spaziale, classificazione sperimentale e ritaglio terrestre.<br>
 Prodotto sperimentale · non calibrato
-</div>
+</footer>
 <div class="status" id="status" role="status">CARICAMENTO PREVISIONE...</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -322,6 +348,13 @@ const labels=L.layerGroup().addTo(map);
 const colors={A:"#e23fff",B:"#388dff",C:"#00edfa"};
 const rank={A:0,B:1,C:2};
 const status=document.getElementById("status");
+const modelsPanel=document.querySelector(".models");
+const modelsTrigger=document.getElementById("models-trigger");
+modelsTrigger.addEventListener("click",()=>{
+ const expanded=modelsPanel.classList.toggle("open");
+ modelsTrigger.setAttribute("aria-expanded",String(expanded));
+ modelsTrigger.querySelector(".models-arrow").textContent=expanded?"▴":"▾";
+});
 const reduced=matchMedia("(prefers-reduced-motion:reduce)").matches;
 let horizon=4,requestId=0,frame=0,pulses=[],items=[];
 function clear(){
@@ -450,7 +483,7 @@ const w=map.getSize();
 const left=Math.max(0,Math.min(nw.x,se.x)),right=Math.min(w.x,Math.max(nw.x,se.x));
 const top=Math.max(0,Math.min(nw.y,se.y)),bottom=Math.min(w.y,Math.max(nw.y,se.y));
 const step=z>=7?68:82;
-const maxIcons=z>=7?6:z>=5?4:2;
+const maxIcons=z>=7?6:z>=5?4:3;
 let added=0;
 for(let y=top+step/2;y<bottom&&added<maxIcons;y+=step){
 for(let x=left+step/2;x<right&&added<maxIcons;x+=step){
@@ -461,7 +494,8 @@ const ll=map.containerPointToLatLng(point);
 if(!contains(geometry,ll.lat,ll.lng))continue;
 if(placed.some(q=>q.distanceTo(point)<separation))continue;
 /* Avoid placing a symbol immediately on polygon boundaries. */
-const probes=[[step*.24,0],[-step*.24,0],[0,step*.24],[0,-step*.24]];
+const margin=z>=7?11:z>=5?7:3;
+const probes=[[margin,0],[-margin,0],[0,margin],[0,-margin]];
 if(!probes.every(([dx,dy])=>{
 const q=map.containerPointToLatLng(L.point(point.x+dx,point.y+dy));
 return contains(geometry,q.lat,q.lng);
@@ -500,10 +534,13 @@ el.title=(id==="icon"?"ICON-2I":id.toUpperCase())+": "+
 }
 document.getElementById("models-note").textContent=
 recent?"Ultima acquisizione":"Stato non aggiornato";
+const overall=document.getElementById("models-overall");
+overall.className="light"+(recent&&ids.every(id=>report[id]==="success")?" ok":"");
 }catch(e){
 for(const id of ids)
 document.getElementById("light-"+id).className="light";
 document.getElementById("models-note").textContent="Stato non disponibile";
+document.getElementById("models-overall").className="light";
 }}
 async function load(){
 const id=++requestId,h=horizon;
