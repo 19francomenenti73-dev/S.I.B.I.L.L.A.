@@ -54,7 +54,8 @@ jobs:
             backend/gfs_engine.py \
             backend/ecmwf_engine.py \
             backend/icon_engine.py \
-            backend/model_selector.py
+            backend/model_selector.py \
+            backend/sinottica_intake.py
 
       - name: Acquire IRIDE observations
         id: iride
@@ -62,6 +63,13 @@ jobs:
         timeout-minutes: 3
         run: |
           python backend/sibilla.py
+
+      - name: Acquire SINOTTICA diagnostic feed
+        id: sinottica
+        continue-on-error: true
+        timeout-minutes: 2
+        run: |
+          python backend/sinottica_intake.py
 
       - name: Acquire NOAA GFS
         id: gfs
@@ -191,6 +199,7 @@ jobs:
       - name: Save acquisition report
         if: always()
         env:
+          SINOTTICA_RESULT: ${{ steps.sinottica.outcome }}
           GFS_RESULT: ${{ steps.gfs.outcome }}
           ECMWF_RESULT: ${{ steps.ecmwf.outcome }}
           ICON_RESULT: ${{ steps.icon.outcome }}
@@ -209,6 +218,7 @@ jobs:
               "generated_at": datetime.now(
                   timezone.utc
               ).isoformat(),
+              "sinottica": os.environ.get("SINOTTICA_RESULT"),
               "gfs": os.environ.get("GFS_RESULT"),
               "ecmwf": os.environ.get("ECMWF_RESULT"),
               "icon": os.environ.get("ICON_RESULT"),
