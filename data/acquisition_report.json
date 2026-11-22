@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-22T12:55:06.199860+00:00",
+  "generated_at": "2026-11-22T12:56:06.527571+00:00",
   "sinottica": "success",
   "gfs": "success",
   "ecmwf": "success",
@@ -7,6 +7,7 @@
   "icon_scheduled": true,
   "iride": "success",
   "argo": "failure",
+  "fusion": "failure",
   "selector": "success",
   "validation": "success",
   "note": "Workflow outcomes only. Success does not establish forecast accuracy."
