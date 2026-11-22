@@ -268,6 +268,19 @@ bottom:66px!important;right:5px!important;top:auto!important;width:min(240px,72v
 max-height:50vh!important;padding:8px!important}
 .letter,html.embedded-mobile .letter,html.sib-fullscreen .letter{width:29px!important;min-width:29px!important;height:29px!important;font-size:15px!important}
 .wx-letter{width:21px!important;height:21px!important;font-size:13px!important;border-width:1.5px!important}
+
+/* V6 final mobile refinement: preserve fullscreen logic but remove its obsolete control. */
+#sib-fullscreen,html.embedded-mobile #sib-fullscreen,html.sib-fullscreen #sib-fullscreen{display:none!important}
+.toggle,html.embedded-mobile .toggle,html.sib-fullscreen .toggle{
+bottom:17px!important;right:4px!important;border-radius:6px!important;
+padding:4px 6px!important;font-size:9px!important}
+.mini-legend,html.embedded-mobile .mini-legend,html.sib-fullscreen .mini-legend{
+bottom:17px!important;right:65px!important;padding:4px 5px!important;
+gap:3px!important;border-radius:6px!important}
+.mini-key,html.embedded-mobile .mini-key,html.sib-fullscreen .mini-key{font-size:9px!important}
+.credits,html.embedded-mobile .credits,html.sib-fullscreen .credits{
+right:190px!important;bottom:16px!important;max-height:29px!important}
+.wx-letter{width:17px!important;height:17px!important;font-size:10px!important}
 </style>
 </head>
 <body>
@@ -472,11 +485,11 @@ function drawLabels(){
 labels.clearLayers();
 const placed=[];
 const z=map.getZoom();
-const iconSize=z>=7?38:z>=5?32:27;
-const separation=z>=7?43:35;
+const iconSize=z>=7?46:z>=5?40:34;
+const separation=z>=7?48:40;
 const bounds=map.getBounds();
 function add(ll,cls,isLetter){
-const size=isLetter?23:iconSize;
+const size=isLetter?19:iconSize;
 L.marker(ll,{pane:"letters",interactive:false,icon:L.divIcon({
 className:"wx-marker",
 html:isLetter?labelSymbol(cls):weatherSymbol(cls),
@@ -511,8 +524,8 @@ const se=map.latLngToContainerPoint(box.getSouthEast());
 const w=map.getSize();
 const left=Math.max(0,Math.min(nw.x,se.x)),right=Math.min(w.x,Math.max(nw.x,se.x));
 const top=Math.max(0,Math.min(nw.y,se.y)),bottom=Math.min(w.y,Math.max(nw.y,se.y));
-const step=z>=7?56:62;
-const maxIcons=z>=7?7:z>=5?5:4;
+const step=z>=7?49:53;
+const maxIcons=z>=7?12:z>=5?9:7;
 let added=0;
 for(let y=top+step/2;y<bottom&&added<maxIcons;y+=step){
 for(let x=left+step/2;x<right&&added<maxIcons;x+=step){
@@ -523,7 +536,7 @@ const ll=map.containerPointToLatLng(point);
 if(!contains(geometry,ll.lat,ll.lng))continue;
 if(placed.some(q=>q.distanceTo(point)<separation))continue;
 /* Avoid placing a symbol immediately on polygon boundaries. */
-const margin=z>=7?11:z>=5?7:3;
+const margin=z>=7?9:z>=5?6:2;
 const probes=[[margin,0],[-margin,0],[0,margin],[0,-margin]];
 if(!probes.every(([dx,dy])=>{
 const q=map.containerPointToLatLng(L.point(point.x+dx,point.y+dy));
@@ -540,7 +553,7 @@ const angle=k*Math.PI/8;
 const point=L.point(origin.x+Math.cos(angle)*radius,origin.y+Math.sin(angle)*radius);
 const ll=map.containerPointToLatLng(point);
 if(!bounds.contains(ll)||!contains(geometry,ll.lat,ll.lng))continue;
-if(placed.some(q=>q.distanceTo(point)<32))continue;
+if(placed.some(q=>q.distanceTo(point)<39))continue;
 add(ll,item.cls,false);added++;break;
 }}
 }
