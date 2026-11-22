@@ -185,6 +185,33 @@ html.embedded-mobile .item small{font-size:9px}
  box-shadow:0 2px 12px #001b3b88;font-size:23px;font-weight:700;cursor:pointer}
 #sib-fullscreen:focus-visible{outline:2px solid white;outline-offset:2px}
 html.embedded-mobile #sib-fullscreen{top:76px;left:4px;width:34px;height:34px;font-size:21px}
+
+/* Fullscreen mobile: compact independent of viewport width changes in Android. */
+html.sib-fullscreen header{top:4px!important;width:calc(100% - 10px)!important;filter:none!important}
+html.sib-fullscreen .brand-wrap{padding:3px 6px!important;gap:5px!important;border-radius:10px!important}
+html.sib-fullscreen .sibilla-icon{width:30px!important;height:34px!important}
+html.sib-fullscreen .brand{font-size:clamp(16px,4vw,22px)!important;letter-spacing:1px!important}
+html.sib-fullscreen .acronym{font-size:7px!important;line-height:1.1!important}
+html.sib-fullscreen .subtitle{display:none!important}
+html.sib-fullscreen .tabs{margin-top:4px!important;padding:3px!important;gap:2px!important}
+html.sib-fullscreen .tabs button{font-size:clamp(10px,2.5vw,13px)!important;padding:8px 1px!important}
+html.sib-fullscreen #sib-fullscreen{top:80px!important;left:6px!important;width:36px!important;height:36px!important;font-size:21px!important}
+html.sib-fullscreen .models{top:80px!important;right:5px!important;width:116px!important;padding:6px!important;border-radius:10px!important}
+html.sib-fullscreen .models-title{font-size:9px!important}
+html.sib-fullscreen .model-row{font-size:9px!important;padding:3px 0!important}
+html.sib-fullscreen .models-note{font-size:8px!important}
+html.sib-fullscreen .light{width:8px!important;height:8px!important}
+html.sib-fullscreen .status{left:5px!important;bottom:35px!important;max-width:calc(100% - 140px)!important;
+font-size:9px!important;line-height:1.25!important;padding:5px 7px!important}
+html.sib-fullscreen .credits{display:none!important}
+html.sib-fullscreen .mini-legend{right:5px!important;bottom:82px!important;padding:5px 7px!important;gap:5px!important}
+html.sib-fullscreen .mini-key{font-size:10px!important}
+html.sib-fullscreen .toggle{right:5px!important;bottom:35px!important;padding:7px 9px!important;font-size:11px!important}
+html.sib-fullscreen .legend{right:5px!important;bottom:75px!important;top:auto!important;
+width:min(260px,68%)!important;max-height:45%!important;padding:10px!important}
+html.sib-fullscreen .legend h2{font-size:15px!important}
+html.sib-fullscreen .item{padding:6px 0!important}
+html.sib-fullscreen .letter{width:34px!important;min-width:34px!important;height:34px!important;font-size:18px!important}
 </style>
 </head>
 <body>
@@ -562,6 +589,8 @@ setInterval(load,300000);
  const standalone="https://19francomenenti73-dev.github.io/S.I.B.I.L.L.A./";
  function sync(){
    const full=!!document.fullscreenElement;
+   document.documentElement.classList.toggle("sib-fullscreen",full);
+   window.dispatchEvent(new Event("resize"));
    button.textContent=full?"✕":"⛶";
    button.setAttribute("aria-label",full?"Esci dallo schermo intero":"Espandi S.I.B.I.L.L.A. a schermo intero");
    button.title=full?"Esci dallo schermo intero":"Schermo intero";
