@@ -12,7 +12,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
-ARGO = "https://19francomenenti73-dev.github.io/A.R.G.O./data/"
+ARGO_URLS = (
+    "https://raw.githubusercontent.com/19francomenenti73-dev/A.R.G.O./main/data/",
+    "https://19francomenenti73-dev.github.io/A.R.G.O./data/",
+)
 MAX_AGE = timedelta(minutes=90)
 
 def timestamp(value):
@@ -22,12 +25,29 @@ def timestamp(value):
     return dt.astimezone(timezone.utc)
 
 def fetch(name):
-    req = urllib.request.Request(ARGO + name, headers={"User-Agent": "SIBILLA-ARGO/1.0", "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=25) as response:
-        raw = response.read(8_000_001)
-    if len(raw) > 8_000_000:
-        raise ValueError("ARGO payload too large")
-    return json.loads(raw)
+    if name not in ("argo.json", "argo_history.json"):
+        raise ValueError("Unexpected ARGO file")
+    errors = []
+    for base in ARGO_URLS:
+        try:
+            req = urllib.request.Request(
+                base + name,
+                headers={"User-Agent": "SIBILLA-ARGO/1.1", "Accept": "application/json",
+                         "Cache-Control": "no-cache"}
+            )
+            with urllib.request.urlopen(req, timeout=25) as response:
+                raw = response.read(8_000_001)
+            if len(raw) > 8_000_000:
+                raise ValueError("ARGO payload too large")
+            data = json.loads(raw)
+            if not isinstance(data, dict):
+                raise ValueError("ARGO JSON root must be object")
+            print("ARGO source:", base, name)
+            return data
+        except (OSError, ValueError, TimeoutError) as exc:
+            errors.append(f"{base}: {type(exc).__name__}: {exc}")
+    raise RuntimeError("ARGO acquisition failed: " + " | ".join(errors))
+
 
 def finite(value):
     return type(value) in (int, float) and math.isfinite(value)
@@ -63,6 +83,7 @@ def main():
     raw = fetch("argo.json")
     history = fetch("argo_history.json")
     observed = timestamp(raw["timestamp"])
+    print("ARGO observed:", observed.isoformat(), "current:", now.isoformat())
     if not -timedelta(minutes=10) <= now - observed <= MAX_AGE:
         raise ValueError("ARGO observation stale or in future")
     if not isinstance(raw.get("cells"), list) or not isinstance(history.get("tracks"), dict):
