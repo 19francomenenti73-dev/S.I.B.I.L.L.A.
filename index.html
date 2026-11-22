@@ -129,6 +129,19 @@ background:#071b2bea;font-size:11px;font-weight:900;text-shadow:0 1px 2px #000}
 @keyframes wx-breathe{0%,100%{transform:translateY(1px) scale(.985)}50%{transform:translateY(-1px) scale(1.01)}}
 @keyframes wx-glimmer{0%,65%,100%{opacity:.55}70%,80%{opacity:1}}
 @media(prefers-reduced-motion:reduce){.wx-cloud,.wx-pulse,.wx-growth{animation:none}}
+
+/* V2 symbols: one class letter per polygon, multiple small cloud icons. */
+.wx-marker{background:transparent!important;border:0!important}
+.wx{width:100%;height:100%;opacity:.84;filter:drop-shadow(0 2px 2px #12304a77)}
+.wx svg{display:block;width:100%;height:100%}
+.wx-cloud{transform-origin:50% 60%;animation:wx-float 8s ease-in-out infinite}
+.wx-c .wx-cloud{animation-duration:11s}
+.wx-letter{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;
+background:#081c30e8;border:2px solid currentColor;font:bold 17px/1 Arial,sans-serif;
+box-shadow:0 1px 5px #05152299}
+.wx-letter-a{color:#e23fff}.wx-letter-b{color:#73b0ff}.wx-letter-c{color:#00edfa}
+@keyframes wx-float{0%,100%{transform:translateY(1px)}50%{transform:translateY(-1px)}}
+@media(prefers-reduced-motion:reduce){.wx-cloud{animation:none}}
 </style>
 </head>
 <body>
@@ -301,61 +314,83 @@ if(!reduced)pulses.push({outline,phase:(pulses.length%4)/4});
 items.push({feature,cls,color});
 }
 function weatherSymbol(cls){
-/* Schematic atmospheric icons: probability class, not observed cloud or lightning. */
-const heavy=cls==="A",medium=cls==="B";
-const shade=heavy?"#657b93":medium?"#94a7b9":"#b7c9d5";
-const light=heavy?"#d0dae3":medium?"#e1e8ec":"#f4f7f8";
-const accent=colors[cls];
-return '<div class="wx wx-'+cls.toLowerCase()+'" aria-label="Potenziale convettivo '+cls+'">'+
-'<svg viewBox="0 0 80 65" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+
-'<defs><linearGradient id="wx-'+cls+'-cloud" x1="0" y1="0" x2=".25" y2="1">'+
-'<stop stop-color="'+light+'"/><stop offset=".65" stop-color="'+shade+'"/>'+
-'<stop offset="1" stop-color="#51677b"/></linearGradient></defs>'+
-'<g class="wx-cloud">'+
-'<path d="M14 49C4 47 4 32 16 28c2-12 17-19 27-11 12-3 23 6 23 17 14 5 11 19-2 20H18C16 54 14 52 14 49Z" '+
-'fill="url(#wx-'+cls+'-cloud)" stroke="#f1f7fb" stroke-opacity=".65" stroke-width="1.1"/>'+
-'<path d="M18 29c7-4 11-2 16 0M42 18c9 0 13 5 14 10" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>'+
-'</g>'+
-(heavy?'<path class="wx-pulse" d="M38 41l-7 12h7l-3 10 16-18h-8l4-4" fill="#e7f4ff" stroke="#aec5dd" stroke-width=".7"/>':
-medium?'<path class="wx-growth" d="M27 58v-7m13 9v-8m12 6v-7" stroke="#b4d8e7" stroke-width="2" stroke-linecap="round" opacity=".75"/>':'')+
-'</svg><span class="wx-class" style="border-color:'+accent+';color:'+accent+'">'+cls+'</span></div>';
+const dark=cls==="A",mid=cls==="B";
+const top=dark?"#b9c5d1":mid?"#d6e0e7":"#f0f5f7";
+const base=dark?"#52647a":mid?"#8398a8":"#b9cbd3";
+return '<div class="wx wx-'+cls.toLowerCase()+'"><svg viewBox="0 0 64 48" aria-hidden="true">'+
+'<defs><linearGradient id="cloud-'+cls+'" x2="0" y2="1"><stop stop-color="'+top+'"/><stop offset="1" stop-color="'+base+'"/></linearGradient></defs>'+
+'<g class="wx-cloud"><path d="M10 38C2 36 3 26 11 23c2-10 14-14 22-8 9-5 20 1 21 11 11 3 10 14-1 15H13Z" fill="url(#cloud-'+cls+')" stroke="#e8f0f4" stroke-width=".8" stroke-opacity=".7"/>'+
+'<path d="M14 25q7-8 16-5M37 17q8-2 12 6" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2"/></g>'+
+(dark?'<path d="M32 31l-5 9h6l-2 7 11-13h-7l3-3" fill="#e4eaf1" opacity=".7"/>':mid?'<path d="M20 43v4m12-4v4m12-4v4" stroke="#b3cfdf" stroke-width="1.5" opacity=".6"/>':'')+
+'</svg></div>';
+}
+function labelSymbol(cls){
+return '<div class="wx-letter wx-letter-'+cls.toLowerCase()+'">'+cls+'</div>';
 }
 function drawLabels(){
 labels.clearLayers();
 const placed=[];
-const iconSize=map.getZoom()>=7?62:map.getZoom()>=5?52:42;
+const z=map.getZoom();
+const iconSize=z>=7?38:z>=5?32:27;
+const separation=z>=7?58:49;
+const bounds=map.getBounds();
+function add(ll,cls,isLetter){
+const size=isLetter?28:iconSize;
+L.marker(ll,{pane:"letters",interactive:false,icon:L.divIcon({
+className:"wx-marker",
+html:isLetter?labelSymbol(cls):weatherSymbol(cls),
+iconSize:[size,size],iconAnchor:[size/2,size/2]
+})}).addTo(labels);
+placed.push(map.latLngToContainerPoint(ll));
+}
 for(const item of [...items].sort((a,b)=>rank[a.cls]-rank[b.cls])){
+const geometry=item.feature.geometry;
 const p=item.feature.properties||{};
 const lat=Number(p.label_lat),lon=Number(p.label_lon);
-if(p.label_lat==null||p.label_lon==null||
-!Number.isFinite(lat)||!Number.isFinite(lon))continue;
-if(!contains(item.feature.geometry,lat,lon))continue;
+if(!Number.isFinite(lat)||!Number.isFinite(lon)||!contains(geometry,lat,lon))continue;
 const origin=map.latLngToContainerPoint([lat,lon]);
 const candidates=[[0,0]];
-for(const radius of [22,42,62,82]){
-for(let a=0;a<8;a++){
-const angle=a*Math.PI/4;
-candidates.push([Math.cos(angle)*radius,Math.sin(angle)*radius]);
-}}
-let chosen=null;
+for(const radius of [24,48,72,96,128]){
+for(let k=0;k<12;k++){const angle=k*Math.PI/6;
+candidates.push([Math.cos(angle)*radius,Math.sin(angle)*radius]);}}
+let center=null;
 for(const [dx,dy] of candidates){
-const pt=L.point(origin.x+dx,origin.y+dy);
-const ll=map.containerPointToLatLng(pt);
-if(!contains(item.feature.geometry,ll.lat,ll.lng))continue;
-if(placed.some(q=>q.distanceTo(pt)<iconSize+5))continue;
-chosen={pt,ll};break;
+const point=L.point(origin.x+dx,origin.y+dy);
+const ll=map.containerPointToLatLng(point);
+if(!bounds.contains(ll)||!contains(geometry,ll.lat,ll.lng))continue;
+if(placed.some(q=>q.distanceTo(point)<separation))continue;
+center=ll;break;
 }
-if(!chosen)continue;
-placed.push(chosen.pt);
-L.marker(chosen.ll,{
-pane:"letters",interactive:false,
-icon:L.divIcon({
-className:"sib-label wx-label",
-html:weatherSymbol(item.cls),
-iconSize:[iconSize,iconSize],iconAnchor:[iconSize/2,iconSize/2]
-})
-}).addTo(labels);
+if(!center)continue;
+add(center,item.cls,true);
+/* Screen-space sampling; density scales with visible polygon area and zoom. */
+const box=L.geoJSON(item.feature).getBounds();
+const nw=map.latLngToContainerPoint(box.getNorthWest());
+const se=map.latLngToContainerPoint(box.getSouthEast());
+const w=map.getSize();
+const left=Math.max(0,Math.min(nw.x,se.x)),right=Math.min(w.x,Math.max(nw.x,se.x));
+const top=Math.max(0,Math.min(nw.y,se.y)),bottom=Math.min(w.y,Math.max(nw.y,se.y));
+const step=z>=7?68:82;
+const maxIcons=z>=7?6:z>=5?4:2;
+let added=0;
+for(let y=top+step/2;y<bottom&&added<maxIcons;y+=step){
+for(let x=left+step/2;x<right&&added<maxIcons;x+=step){
+const offset=(Math.floor(y/step)%2)*step*.45;
+const point=L.point(x+offset,y);
+if(point.x>right)continue;
+const ll=map.containerPointToLatLng(point);
+if(!contains(geometry,ll.lat,ll.lng))continue;
+if(placed.some(q=>q.distanceTo(point)<separation))continue;
+/* Avoid placing a symbol immediately on polygon boundaries. */
+const probes=[[step*.24,0],[-step*.24,0],[0,step*.24],[0,-step*.24]];
+if(!probes.every(([dx,dy])=>{
+const q=map.containerPointToLatLng(L.point(point.x+dx,point.y+dy));
+return contains(geometry,q.lat,q.lng);
+}))continue;
+add(ll,item.cls,false);added++;
 }}
+}
+}
 function animate(t){
 for(const p of pulses){
 const phase=(t/3600+p.phase)%1;
