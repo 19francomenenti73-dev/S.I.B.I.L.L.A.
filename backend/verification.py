@@ -34,7 +34,16 @@ def main():
             candidate = json.loads(experimental.read_text()) if experimental.exists() else None
             if candidate and any(candidate["metadata"].get(k) != m.get(k) for k in ("generated_at","forecast_valid_at","selection_generated_at")):
                 candidate = None
-            atomic_json(target, {"archived_at": now.isoformat(), "forecast": f, "experimental": candidate})
+            context = None
+            if candidate:
+                try:
+                    fusion = json.loads((DATA / "fusion_context.json").read_text())
+                    aligned = json.loads((DATA / "aligned_inputs.json").read_text())
+                    if fusion.get("observed_at") == candidate["metadata"].get("radar_observed_at") == aligned.get("observed_at") and abs((now-parse_time(fusion["generated_at"])).total_seconds()) <= 600:
+                        context = {"fusion": fusion["horizons"].get(str(h), {}), "sources": fusion.get("sources", {}), "observed_at": aligned["observed_at"], "archived_at": now.isoformat(), "forecast_modified": False}
+                except (OSError, ValueError, KeyError, TypeError):
+                    pass
+            atomic_json(target, {"archived_at": now.isoformat(), "forecast": f, "experimental": candidate, "source_context": context})
     observations = {}
     for p in (DATA / "observations").glob("*.json"):
         o = json.loads(p.read_text())
@@ -111,7 +120,7 @@ def main():
                          "by_class": {k: sum(any(g.covers(q) for g,x in zip(geoms,f["features"]) if x["properties"]["class"] == k) for q in points) for k in ("A","B","C")}})
         result = {"forecast_id": p.stem, "horizon_hours": m["horizon_hours"],
                   "generated_at": m["generated_at"], "valid_at": valid.isoformat(),
-                  "selected_model": m.get("selected_model"), "samples": rows,
+                  "selected_model": m.get("selected_model"), "source_context": a.get("source_context"), "samples": rows,
                   "status": "provisional_centroid_diagnostic",
                   "note": "Coverage and convection not established; no false alarm or skill claims."}
         atomic_json(METRICS / p.name, result)
