@@ -49,6 +49,8 @@ def main():
         o = json.loads(p.read_text())
         observations[parse_time(o["observed_at"])] = o
     completed = 0
+    reports = 0
+    missing_samples = 0
     for p in ARCHIVE.glob("*.json"):
         a = json.loads(p.read_text())
         f = a["forecast"]
@@ -124,10 +126,12 @@ def main():
                   "status": "provisional_centroid_diagnostic",
                   "note": "Coverage and convection not established; no false alarm or skill claims."}
         atomic_json(METRICS / p.name, result)
-        completed += 1
+        reports += 1
+        missing_samples += sum(row["status"] == "missing_observation" for row in rows)
+        completed += int(any(row["status"] == "centroid_diagnostic" for row in rows))
         if now >= valid + timedelta(hours=72):
             p.unlink()
-    atomic_json(DATA / "verification_status.json", {"generated_at": now.isoformat(), "processed": completed,
+    atomic_json(DATA / "verification_status.json", {"generated_at": now.isoformat(), "processed": completed, "reports_written": reports, "missing_samples": missing_samples,
                 "pending_archive_count": len(list(ARCHIVE.glob("*.json"))), "method": "centroid_diagnostic"})
 
 if __name__ == "__main__":
