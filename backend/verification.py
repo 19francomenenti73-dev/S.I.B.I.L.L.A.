@@ -102,6 +102,12 @@ def main():
                 overlap = {"observed_envelope_km2":obs_area.area,"intersection_km2":intersection,
                            "observed_envelope_fraction_inside":intersection/obs_area.area if obs_area.area else None,
                            "envelope_count":len(envelopes),"method":"bounding_envelope_proxy_not_echo_coverage"}
+            candidate_union = unary_union([shape(x["geometry"]) for x in candidate["features"]]) if candidate else None
+            candidate_distances = []
+            if candidate_union is not None and not candidate_union.is_empty:
+                for point in points:
+                    near = nearest_points(point, candidate_union)[1]
+                    candidate_distances.append(distance_km({"lat":point.y,"lon":point.x},{"lat":near.y,"lon":near.x}))
             distances = []
             if not union.is_empty:
                 for point in points:
@@ -111,6 +117,9 @@ def main():
                          "mean_distance_to_forecast_km": sum(distances)/len(distances) if distances else None,
                          "max_distance_to_forecast_km": max(distances) if distances else None,
                          "distance_sample_count": len(distances),
+                         "experimental_mean_distance_km": sum(candidate_distances)/len(candidate_distances) if candidate_distances else None,
+                         "experimental_centroids_inside": sum(candidate_union.covers(q) for q in points) if candidate_union is not None else None,
+                         "experimental_geometry_changed": bool(candidate and candidate["metadata"].get("radar_geometry_changed")),
                          "envelope_overlap_proxy": overlap,
                          "false_alarm_rate": None, "miss_rate": None,
                          "coverage_verified": False,
