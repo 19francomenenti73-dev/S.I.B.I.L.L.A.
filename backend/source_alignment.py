@@ -78,79 +78,92 @@ def atomic(path, data):
         if os.path.exists(tmp):
             os.unlink(tmp)
 
+def bearing(a, b):
+    r = math.pi / 180
+    p, q = a["lat"]*r, b["lat"]*r
+    d = (b["lon"]-a["lon"])*r
+    return math.degrees(math.atan2(math.sin(d)*math.cos(q), math.cos(p)*math.sin(q)-math.sin(p)*math.cos(q)*math.cos(d))) % 360
+
+def normalize(cell, obs, observed, source):
+    if not coordinates(cell) or len(obs) < 2:
+        return None
+    a,b = obs[-2:]
+    if not coordinates(a) or not coordinates(b):
+        return None
+    t0,t1 = timestamp(a["timestamp"]),timestamp(b["timestamp"])
+    dt = (t1-t0).total_seconds()/60
+    if not 4 <= dt <= (30 if source=="argo" else 45) or abs((t1-observed).total_seconds()) > 60:
+        return None
+    speed = distance_km(a,b)*60/dt
+    if speed > (130 if source=="argo" else 140) or distance_km(b,cell)>2:
+        return None
+    return {"id":str(cell.get("track_id") or cell.get("id")), "source":source,
+            "observed_at":t1.isoformat(),"lat":cell["lat"],"lon":cell["lon"],
+            "speed_kmh":speed,"direction_deg":bearing(a,b),"interval_min":dt,
+            "track_points":[a,b],"max_dbz":cell.get("max_dbz"),
+            "predictive":cell.get("vectors") if source=="iride" else None}
+
 def main():
     now = datetime.now(timezone.utc)
-    raw = fetch("argo.json")
-    history = fetch("argo_history.json")
-    observed = timestamp(raw["timestamp"])
-    print("ARGO observed:", observed.isoformat(), "current:", now.isoformat())
-    if not -timedelta(minutes=10) <= now - observed <= MAX_AGE:
-        raise ValueError("ARGO observation stale or in future")
-    if not isinstance(raw.get("cells"), list) or not isinstance(history.get("tracks"), dict):
-        raise ValueError("Invalid ARGO schema")
-    iride = load_local(DATA / "latest_observation.json")
-    iride_cells = []
-    if isinstance(iride, dict):
+    vectors = []
+    sources = {}
+    times = []
+    for source in ("argo","iride"):
         try:
-            it = timestamp(iride["observed_at"])
-            if abs((it - observed).total_seconds()) <= 3600 and now - it <= MAX_AGE:
-                iride_cells = iride.get("cells", [])
-        except (ValueError, TypeError, KeyError):
-            pass
-    aligned = []
-    for cell in raw["cells"]:
-        if not coordinates(cell):
-            continue
-        motion = cell.get("motion")
-        if not isinstance(motion, dict) or motion.get("type") != "observed":
-            continue
-        speed, direction, interval = (motion.get(k) for k in ("speed_kmh", "direction_deg", "interval_min"))
-        if not all(finite(v) for v in (speed, direction, interval)) or not (0 <= speed <= 130 and 0 <= direction < 360 and 4 <= interval <= 30):
-            continue
-        track = history["tracks"].get(cell.get("track_id") or cell.get("id"), {})
-        obs = track.get("observations", []) if isinstance(track, dict) else []
-        if len(obs) < 2 or not coordinates(obs[-1]) or not coordinates(obs[-2]):
-            continue
-        try:
-            t0, t1 = timestamp(obs[-2]["timestamp"]), timestamp(obs[-1]["timestamp"])
-        except (ValueError, KeyError, TypeError):
-            continue
-        dt = (t1 - t0).total_seconds() / 60
-        if not 4 <= dt <= 30 or abs((t1 - observed).total_seconds()) > 1800:
-            continue
-        if distance_km(obs[-1], cell) > 2 or abs(distance_km(obs[-2], obs[-1]) * 60 / dt - speed) > 8:
-            continue
-        matches = sorted(
-            ((distance_km(cell, other), other.get("id")) for other in iride_cells if coordinates(other)),
-            key=lambda v: v[0]
-        )
-        match = matches[0] if matches and matches[0][0] <= 20 else None
-        aligned.append({
-            "argo_id": str(cell.get("id", ""))[:100],
-            "observed_at": t1.isoformat(),
-            "lat": cell["lat"], "lon": cell["lon"],
-            "speed_kmh": speed, "direction_deg": direction,
-            "interval_min": dt,
-            "track_points": [obs[-2], obs[-1]],
-            "iride_match": {"id": match[1], "distance_km": round(match[0], 2)} if match else None,
-            "duplicate_observation": match is not None
-        })
-    syn = load_local(DATA / "sinottica_intake.json")
-    frames = syn.get("frames", []) if isinstance(syn, dict) else []
-    syn_valid = isinstance(syn, dict) and syn.get("product") == "SIBILLA_SINOTTICA_DIAGNOSTIC"
-    result = {
-        "schema_version": 1, "product": "SIBILLA_ALIGNED_INPUTS",
-        "generated_at": now.isoformat(), "observed_at": observed.isoformat(),
-        "horizons_hours": [4, 8, 16, 24, 36],
-        "argo": {"source": "RainViewer", "cell_count": len(raw["cells"]), "validated_vectors": len(aligned)},
-        "iride": {"available": bool(iride_cells), "cell_count": len(iride_cells)},
-        "sinottica": {"available": syn_valid, "frame_count": len(frames), "type": "model_diagnostics"},
-        "vectors": aligned,
-        "forecast_assimilation": False,
-        "note": "Aligned observed vectors and model diagnostics; proximity is not proof of same storm. No forecast modification."
-    }
-    atomic(DATA / "aligned_inputs.json", result)
-    print("ARGO aligned vectors:", len(aligned), "IRIDE matches:", sum(v["duplicate_observation"] for v in aligned))
+            if source=="argo":
+                raw,history = fetch("argo.json"),fetch("argo_history.json")
+                observed = timestamp(raw["timestamp"])
+            else:
+                raw = load_local(DATA/"latest_observation.json")
+                observed = timestamp(raw["observed_at"])
+            if not -timedelta(minutes=10)<=now-observed<=MAX_AGE:
+                raise ValueError("stale observation")
+            cells = raw["cells"]
+            if not isinstance(cells,list):
+                raise ValueError("invalid cells")
+            accepted = []
+            for c in cells:
+                try:
+                    if source=="argo":
+                        if c.get("motion",{}).get("type")!="observed":
+                            continue
+                        obs = history["tracks"].get(c.get("track_id") or c.get("id"),{}).get("observations",[])
+                    else:
+                        if not c.get("vectors",{}).get("real"):
+                            continue
+                        obs = c.get("track",{}).get("observations",[])
+                    v = normalize(c,obs,observed,source)
+                    if v:
+                        accepted.append(v)
+                except (ValueError,KeyError,TypeError,AttributeError):
+                    continue
+            vectors.extend(accepted)
+            times.append(observed)
+            sources[source]={"available":True,"cell_count":len(cells),"validated_vectors":len(accepted),"observed_at":observed.isoformat()}
+        except Exception as exc:
+            sources[source]={"available":False,"error":str(exc),"validated_vectors":0}
+    pairs=[]
+    for i,a in enumerate(vectors):
+        if a["source"]!="iride": continue
+        for j,b in enumerate(vectors):
+            if b["source"]!="argo": continue
+            if abs((timestamp(a["observed_at"])-timestamp(b["observed_at"])).total_seconds())>600: continue
+            d=distance_km(a,b)
+            turn=abs((a["direction_deg"]-b["direction_deg"]+180)%360-180)
+            if d<=20 and turn<=45 and abs(a["speed_kmh"]-b["speed_kmh"])<=25:
+                pairs.append((d,i,j))
+    used=set()
+    fused=[]
+    for d,i,j in sorted(pairs):
+        if i in used or j in used: continue
+        used.update((i,j))
+        fused.append({**vectors[i],"corroborating_track":vectors[j],"match_distance_km":d,"match_status":"candidate"})
+    fused.extend(v for i,v in enumerate(vectors) if i not in used)
+    atomic(DATA/"aligned_inputs.json",{"product":"SIBILLA_ALIGNED_INPUTS","schema_version":2,
+        "generated_at":now.isoformat(),"observed_at":max(times).isoformat() if times else now.isoformat(),
+        **sources,"vectors":fused,"raw_vector_count":len(vectors),"candidate_pairs":len(used)//2,
+        "forecast_assimilation":False})
+    if not times: raise RuntimeError("Both radar sources unavailable")
 
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
