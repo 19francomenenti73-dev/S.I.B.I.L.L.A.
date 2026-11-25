@@ -625,14 +625,15 @@ for(const id of ids){
 const el=document.getElementById("light-"+id);
 el.className="light";
 if(recent&&report[id]==="success")el.classList.add("ok");
+if(id==="icon"&&recent&&report[id]==="skipped")el.style.background="#aab6c4";else el.style.background="";
 else if(recent&&report[id]==="failure")el.classList.add("fail");
 el.title=(id==="icon"?"ICON-2I":id.toUpperCase())+": "+
-(recent?String(report[id]||"sconosciuto"):"stato non recente");
+(recent?(id==="icon"&&report[id]==="skipped"?"Non programmato":String(report[id]||"sconosciuto")):"stato non recente");
 }
 document.getElementById("models-note").textContent=
 recent?"Ultima acquisizione":"Stato non aggiornato";
 const overall=document.getElementById("models-overall");
-overall.className="light"+(recent&&ids.every(id=>report[id]==="success")?" ok":"");
+overall.className="light"+(recent&&ids.every(id=>report[id]==="success"||(id==="icon"&&report[id]==="skipped"&&report.icon_scheduled===false))?" ok":"");
 }catch(e){
 for(const id of ids)
 document.getElementById("light-"+id).className="light";
@@ -685,6 +686,8 @@ model+" · +"+h+"H · "+items.length+
 " AREE TERRESTRI · VALIDO "+
 localTime(m.forecast_valid_at)+" · "+
 method+" · NON CALIBRATO";
+const effective=(valid-generated)/3600000;
+timeLabel.textContent="Validità +"+h+"h ("+effective.toFixed(1)+"h eff.)";
 timeGenerated.textContent=formatMapTime(generated);
 timeValid.textContent=formatMapTime(valid);
 if(pulses.length&&!reduced)frame=requestAnimationFrame(animate);
