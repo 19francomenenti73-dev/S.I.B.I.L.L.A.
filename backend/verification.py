@@ -3,7 +3,8 @@ import hashlib
 import json
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from shapely.geometry import shape, Point
+from shapely.geometry import shape, Point, Polygon
+from shapely.ops import transform
 from shapely.ops import unary_union, nearest_points
 from source_alignment import distance_km
 from sibilla import atomic_json, parse_time
@@ -46,6 +47,10 @@ def main():
         valid = parse_time(m["forecast_valid_at"])
         if now < valid + timedelta(minutes=45):
             continue
+        previous = METRICS / p.name
+        if previous.exists() and now >= valid + timedelta(hours=72):
+            p.unlink()
+            continue
         rows = []
         for offset in (-30, 0, 30):
             target = valid + timedelta(minutes=offset)
@@ -62,6 +67,30 @@ def main():
             points = [Point(c["lon"], c["lat"]) for c in cells]
             candidate = a.get("experimental")
             supported = unary_union([shape(x["geometry"]) for x in candidate["features"] if x["properties"].get("radar_support_count",0)>0]) if candidate else None
+            # Bounding envelopes are not actual echo footprints. Report proxy only.
+            envelopes = []
+            for c in cells:
+                ring = c.get("perimeter")
+                if isinstance(ring,list) and len(ring)>=3:
+                    try:
+                        g = Polygon([(p[1],p[0]) for p in ring])
+                        if g.is_valid and not g.is_empty:
+                            envelopes.append(g)
+                    except (ValueError,TypeError,IndexError):
+                        pass
+            proxy = unary_union(envelopes)
+            overlap = None
+            if envelopes and not union.is_empty:
+                # Approximate equal-area cylindrical projection, km units.
+                import math
+                def project(x,y,z=None):
+                    return (6371*math.radians(x),6371*math.sin(math.radians(y)))
+                obs_area = transform(project,proxy)
+                pred_area = transform(project,union)
+                intersection = obs_area.intersection(pred_area).area
+                overlap = {"observed_envelope_km2":obs_area.area,"intersection_km2":intersection,
+                           "observed_envelope_fraction_inside":intersection/obs_area.area if obs_area.area else None,
+                           "envelope_count":len(envelopes),"method":"bounding_envelope_proxy_not_echo_coverage"}
             distances = []
             if not union.is_empty:
                 for point in points:
@@ -71,6 +100,9 @@ def main():
                          "mean_distance_to_forecast_km": sum(distances)/len(distances) if distances else None,
                          "max_distance_to_forecast_km": max(distances) if distances else None,
                          "distance_sample_count": len(distances),
+                         "envelope_overlap_proxy": overlap,
+                         "false_alarm_rate": None, "miss_rate": None,
+                         "coverage_verified": False,
                          "centroids_in_radar_supported_polygons": sum(supported.covers(q) for q in points) if supported is not None and candidate["metadata"].get("radar_support_available") else None,
                          "observed_at": t.isoformat(), "sampling_offset_minutes": (t-target).total_seconds()/60,
                          "source": o.get("source"), "radar_centroids": len(points),
