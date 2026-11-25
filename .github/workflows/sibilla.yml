@@ -57,7 +57,8 @@ jobs:
             backend/model_selector.py \
             backend/sinottica_intake.py \
             backend/source_alignment.py \
-            backend/fusion_context.py
+            backend/fusion_context.py \
+            backend/verification.py
 
       - name: Acquire IRIDE observations
         id: iride
@@ -215,6 +216,11 @@ jobs:
           print(f"Validated horizons: {available}/5")
           PY
 
+      - name: Archive and verify forecasts
+        id: verification
+        continue-on-error: true
+        run: python backend/verification.py
+
       - name: Save acquisition report
         if: always()
         env:
@@ -227,6 +233,7 @@ jobs:
           ARGO_RESULT: ${{ steps.argo.outcome }}
           FUSION_RESULT: ${{ steps.fusion.outcome }}
           SELECTOR_RESULT: ${{ steps.selector.outcome }}
+          VERIFICATION_RESULT: ${{ steps.verification.outcome }}
           VALIDATION_RESULT: ${{ steps.validation.outcome }}
         run: |
           python - <<'PY'
@@ -251,6 +258,7 @@ jobs:
               "fusion": os.environ.get("FUSION_RESULT"),
               "selector": os.environ.get("SELECTOR_RESULT"),
               "validation": os.environ.get("VALIDATION_RESULT"),
+              "verification": os.environ.get("VERIFICATION_RESULT"),
               "note": (
                   "Workflow outcomes only. "
                   "Success does not establish "

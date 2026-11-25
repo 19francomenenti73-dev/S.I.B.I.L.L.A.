@@ -175,11 +175,17 @@ def compact_cell(cell):
             area, 2
         )
 
+    for key in ("track_id", "track", "vectors", "perimeter", "morphology", "mesoscale_classification", "mean_dbz"):
+        if key in cell:
+            result[key] = cell[key]
     return result
 
 
 def acquire():
-    raw = download_json(IRIDE_URL)
+    try:
+        raw = download_json("https://raw.githubusercontent.com/19francomenenti73-dev/Iride/main/data/iride.json")
+    except Exception:
+        raw = download_json(IRIDE_URL)
 
     if raw.get("status") != "ok":
         raise RuntimeError(
@@ -298,7 +304,7 @@ def main():
         "horizons_hours": list(HORIZONS),
         "observation_engine": "IRIDE",
         "forecast_engine": "external_multimodel",
-        "verification_engine": "not_connected",
+        "verification_engine": "provisional_centroid_diagnostic",
         "radar_status": "unavailable"
     }
 
@@ -334,6 +340,9 @@ def main():
         DATA / "status.json",
         status
     )
+
+    if status["radar_status"] != "ok":
+        raise RuntimeError(status.get("radar_error", "IRIDE unavailable"))
 
     print(
         "S.I.B.I.L.L.A. V5 - "
