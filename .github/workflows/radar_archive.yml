@@ -1,0 +1,44 @@
+name: Independent radar archive
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "5,15,25,35,45,55 * * * *"
+  push:
+    branches: [main]
+    paths: [".github/workflows/radar_archive.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: sibilla-radar-archive
+  cancel-in-progress: false
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Acquire radar snapshot
+        run: |
+          PYTHONPATH=backend python -c 'from sibilla import acquire; print(acquire()["observed_at"])'
+      - name: Publish immutable observations
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          SNAP=$(mktemp -d)
+          cp -a data/observations/. "$SNAP/"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p data/observations
+            cp -an "$SNAP/." data/observations/
+            git add data/observations/
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "Archive radar observations"
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 3
+          done
+          exit 1
