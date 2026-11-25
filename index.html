@@ -626,8 +626,8 @@ for(const id of ids){
 const el=document.getElementById("light-"+id);
 el.className="light";
 if(recent&&report[id]==="success")el.classList.add("ok");
-if(id==="icon"&&recent&&report[id]==="skipped")el.style.background="#aab6c4";else el.style.background="";
 else if(recent&&report[id]==="failure")el.classList.add("fail");
+el.style.background=(id==="icon"&&recent&&report[id]==="skipped")?"#aab6c4":"";
 el.title=(id==="icon"?"ICON-2I":id.toUpperCase())+": "+
 (recent?(id==="icon"&&report[id]==="skipped"?"Non programmato":String(report[id]||"sconosciuto")):"stato non recente");
 }
@@ -734,6 +734,7 @@ setInterval(load,300000);
 <script>
 (function(){
  const button=document.getElementById("sib-fullscreen");
+ if(!button)return;
  const embedded=new URLSearchParams(location.search).has("embed");
  const standalone="https://19francomenenti73-dev.github.io/S.I.B.I.L.L.A./";
  function sync(){
