@@ -143,6 +143,8 @@ def main():
         except Exception as exc:
             sources[source]={"available":False,"error":str(exc),"validated_vectors":0}
     pairs=[]
+    proximity_pairs=0
+    motion_rejected=0
     for i,a in enumerate(vectors):
         if a["source"]!="iride": continue
         for j,b in enumerate(vectors):
@@ -150,6 +152,10 @@ def main():
             if abs((timestamp(a["observed_at"])-timestamp(b["observed_at"])).total_seconds())>600: continue
             d=distance_km(a,b)
             turn=abs((a["direction_deg"]-b["direction_deg"]+180)%360-180)
+            if d<=20:
+                proximity_pairs+=1
+                if turn>45 or abs(a['speed_kmh']-b['speed_kmh'])>25:
+                    motion_rejected+=1
             if d<=20 and turn<=45 and abs(a["speed_kmh"]-b["speed_kmh"])<=25:
                 pairs.append((d,i,j))
     used=set()
@@ -161,7 +167,7 @@ def main():
     fused.extend(v for i,v in enumerate(vectors) if i not in used)
     atomic(DATA/"aligned_inputs.json",{"product":"SIBILLA_ALIGNED_INPUTS","schema_version":2,
         "generated_at":now.isoformat(),"observed_at":max(times).isoformat() if times else now.isoformat(),
-        **sources,"vectors":fused,"raw_vector_count":len(vectors),"candidate_pairs":len(used)//2,
+        **sources,"vectors":fused,"raw_vector_count":len(vectors),"candidate_pairs":len(used)//2,"proximity_pairs":proximity_pairs,"motion_rejected":motion_rejected,
         "forecast_assimilation":False})
     if not times: raise RuntimeError("Both radar sources unavailable")
 

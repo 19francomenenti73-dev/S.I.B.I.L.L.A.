@@ -124,8 +124,24 @@ def main():
         # Experimental ranking of existing model polygons by radar support.
         # No class changes or new risk areas; preserve baseline separately.
         candidate = deepcopy(forecast)
+        # Current motion corridors are contextual evidence, not survival forecasts.
+        corridor = []
+        if h in (4,8):
+            for v in vectors:
+                if not 0 <= (now-dt(v["observed_at"])).total_seconds() <= 5400:
+                    continue
+                lat,lon = map(math.radians,(v["lat"],v["lon"]))
+                b = math.radians(v["direction_deg"])
+                for minutes in (0,30,60,90,120,180):
+                    arc = v["speed_kmh"]*minutes/60/6371
+                    q = math.asin(math.sin(lat)*math.cos(arc)+math.cos(lat)*math.sin(arc)*math.cos(b))
+                    x = lon+math.atan2(math.sin(b)*math.sin(arc)*math.cos(lat),math.cos(arc)-math.sin(lat)*math.sin(q))
+                    point = Point((math.degrees(x)+180)%360-180,math.degrees(q))
+                    hits = [i for i,f in enumerate(features) if shape(f["geometry"]).covers(point)]
+                    corridor.append({"track_id":v["id"],"source":v["source"],"minutes":minutes,"feature_indices":hits})
         for i, feature in enumerate(candidate["features"]):
             support = [e for e in evidence if i in e["feature_indices"]]
+            feature["properties"]["radar_corridor_track_count"] = len({(e["source"],e["track_id"]) for e in corridor if i in e["feature_indices"]})
             feature["properties"]["radar_support_count"] = len(support)
             feature["properties"]["radar_support_sources"] = sorted({e["source"] for e in support})
         candidate["metadata"]["radar_assimilation"] = "experimental_polygon_support"
@@ -137,6 +153,7 @@ def main():
         atomic(out / f"{h}h.geojson", candidate)
         report["horizons"][str(h)] = {
             "projected_track_evidence": evidence,
+            "corridor_context_samples": len(corridor),
             "status": "diagnostic_only", "selected_model": metadata.get("selected_model"),
             "polygon_matches_at_observation_time": matches,
             "sinottica_time_aligned_frames": len(compatible),

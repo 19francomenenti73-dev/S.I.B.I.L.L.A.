@@ -214,6 +214,7 @@ jobs:
                   path.unlink(missing_ok=True)
 
           print(f"Validated horizons: {available}/5")
+          assert available > 0, "No valid forecast horizons"
           PY
 
       - name: Archive and verify forecasts
@@ -311,7 +312,7 @@ jobs:
               fi
             done
 
-            git add -A data/
+              git add -A data/
 
             if git diff --cached --quiet; then
               echo "No data changes"
