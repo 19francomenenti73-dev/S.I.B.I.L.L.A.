@@ -4,7 +4,8 @@ import json
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from shapely.geometry import shape, Point
-from shapely.ops import unary_union
+from shapely.ops import unary_union, nearest_points
+from source_alignment import distance_km
 from sibilla import atomic_json, parse_time
 
 DATA = Path(__file__).resolve().parents[1] / "data"
@@ -28,7 +29,11 @@ def main():
         key = hashlib.sha256(raw).hexdigest()
         target = ARCHIVE / f"{h}h_{key}.json"
         if not target.exists() and not (METRICS / target.name).exists():
-            atomic_json(target, {"archived_at": now.isoformat(), "forecast": f})
+            experimental = DATA / "experimental_forecast" / f"{h}h.geojson"
+            candidate = json.loads(experimental.read_text()) if experimental.exists() else None
+            if candidate and any(candidate["metadata"].get(k) != m.get(k) for k in ("generated_at","forecast_valid_at","selection_generated_at")):
+                candidate = None
+            atomic_json(target, {"archived_at": now.isoformat(), "forecast": f, "experimental": candidate})
     observations = {}
     for p in (DATA / "observations").glob("*.json"):
         o = json.loads(p.read_text())
@@ -55,7 +60,18 @@ def main():
             geoms = [shape(x["geometry"]) for x in f["features"]]
             union = unary_union(geoms)
             points = [Point(c["lon"], c["lat"]) for c in cells]
+            candidate = a.get("experimental")
+            supported = unary_union([shape(x["geometry"]) for x in candidate["features"] if x["properties"].get("radar_support_count",0)>0]) if candidate else None
+            distances = []
+            if not union.is_empty:
+                for point in points:
+                    nearest = nearest_points(point, union)[1]
+                    distances.append(distance_km({"lat":point.y,"lon":point.x},{"lat":nearest.y,"lon":nearest.x}))
             rows.append({"offset_minutes": offset, "status": "centroid_diagnostic",
+                         "mean_distance_to_forecast_km": sum(distances)/len(distances) if distances else None,
+                         "max_distance_to_forecast_km": max(distances) if distances else None,
+                         "distance_sample_count": len(distances),
+                         "centroids_in_radar_supported_polygons": sum(supported.covers(q) for q in points) if supported is not None and candidate["metadata"].get("radar_support_available") else None,
                          "observed_at": t.isoformat(), "sampling_offset_minutes": (t-target).total_seconds()/60,
                          "source": o.get("source"), "radar_centroids": len(points),
                          "centroids_inside": sum(union.covers(q) for q in points),
