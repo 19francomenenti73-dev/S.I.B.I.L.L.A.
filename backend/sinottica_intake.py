@@ -36,6 +36,25 @@ def vector_grid(value, level, height):
         return None
     return {"lat": lat, "lon": lon, "u": u, "v": v, "units": "m/s", level: height}
 
+def pressure_grid(value):
+    import math
+    if not isinstance(value, dict) or value.get("units") != "hPa" or value.get("level") != "mean_sea_level":
+        return None
+    y,x,z = (value.get(k) for k in ("lat","lon","values"))
+    if not all(isinstance(a,list) and len(a)>=2 for a in (y,x,z)):
+        return None
+    if len(z)!=len(y) or any(not isinstance(row,list) or len(row)!=len(x) for row in z):
+        return None
+    if any(type(v) not in (int,float) or not math.isfinite(v) for v in y+x+[v for row in z for v in row]):
+        return None
+    if not all(-90<=v<=90 for v in y) or not all(-180<=v<=180 for v in x):
+        return None
+    if not (all(a>b for a,b in zip(y,y[1:])) or all(a<b for a,b in zip(y,y[1:]))):
+        return None
+    if not all(a<b for a,b in zip(x,x[1:])) or any(not 800<=v<=1100 for row in z for v in row):
+        return None
+    return value
+
 def satellite_metadata(now):
     """EUMETSAT WMS availability, NOT downloaded satellite imagery."""
     try:
@@ -87,6 +106,7 @@ def main():
                 "wind_10m_present": isinstance(frame.get("surface_wind_vectors"), dict),
                 "pressure_present": isinstance(frame.get("pressure", {}).get("features"), list),
                 "isobars_present": isinstance(frame.get("isobars", {}).get("features"), list),
+                "pressure_grid": pressure_grid(frame.get("pressure_grid")),
                 "jet_250hpa": vector_grid(frame.get("wind_vectors"), "level_hpa", 250),
                 "wind_10m": vector_grid(frame.get("surface_wind_vectors"), "height_m", 10)
             })
