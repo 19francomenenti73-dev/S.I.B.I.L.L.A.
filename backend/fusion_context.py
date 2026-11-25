@@ -10,6 +10,7 @@ import tempfile
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from shapely.geometry import Point, shape
+from copy import deepcopy
 
 DATA = Path(__file__).resolve().parents[1] / "data"
 HORIZONS = (4, 8, 16, 24, 36)
@@ -120,6 +121,20 @@ def main():
                 point = Point((math.degrees(x)+180)%360-180,math.degrees(q))
                 hits = [i for i,f in enumerate(features) if shape(f["geometry"]).covers(point)]
                 evidence.append({"track_id":v["id"],"source":v["source"],"projected_lon":point.x,"projected_lat":point.y,"feature_indices":hits})
+        # Experimental ranking of existing model polygons by radar support.
+        # No class changes or new risk areas; preserve baseline separately.
+        candidate = deepcopy(forecast)
+        for i, feature in enumerate(candidate["features"]):
+            support = [e for e in evidence if i in e["feature_indices"]]
+            feature["properties"]["radar_support_count"] = len(support)
+            feature["properties"]["radar_support_sources"] = sorted({e["source"] for e in support})
+        candidate["metadata"]["radar_assimilation"] = "experimental_polygon_support"
+        candidate["metadata"]["radar_observed_at"] = aligned["observed_at"]
+        candidate["metadata"]["radar_support_available"] = bool(evidence)
+        candidate["metadata"]["radar_geometry_changed"] = False
+        out = DATA / "experimental_forecast"
+        out.mkdir(parents=True, exist_ok=True)
+        atomic(out / f"{h}h.geojson", candidate)
         report["horizons"][str(h)] = {
             "projected_track_evidence": evidence,
             "status": "diagnostic_only", "selected_model": metadata.get("selected_model"),
