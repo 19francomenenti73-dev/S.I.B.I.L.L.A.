@@ -73,7 +73,7 @@ def cycles():
 
 def lead_hour(cycle, horizon):
     elapsed = (NOW - cycle).total_seconds() / 3600
-    lead = math.ceil((elapsed + horizon) / 3) * 3
+    lead = math.floor((elapsed + horizon) / 3 + 0.5) * 3
     return max(3, int(lead))
 
 

@@ -104,23 +104,25 @@ jobs:
             exit 0
           fi
 
-          HOUR="$(date -u +%H)"
-          MINUTE="$(date -u +%M)"
-
-          # Finestra di due ore per tollerare
-          # ritardi di GitHub Actions.
-          # Un solo tentativo per finestra:
-          # viene scelto il minuto 11 o 41.
-          case "$HOUR:$MINUTE" in
-            02:11|02:41|08:11|08:41|14:11|14:41|20:11|20:41)
-              echo "run_icon=true" >> "$GITHUB_OUTPUT"
-              echo "ICON-2I: acquisition window"
-              ;;
-            *)
-              echo "run_icon=false" >> "$GITHUB_OUTPUT"
-              echo "ICON-2I: skipped to reduce requests"
-              ;;
-          esac
+          # Use the last published attempt, not exact runner start minutes.
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          now = datetime.now(timezone.utc)
+          slot = now.replace(hour=((now.hour-2)%24)//6*6+2, minute=0, second=0, microsecond=0)
+          if slot > now:
+              from datetime import timedelta
+              slot -= timedelta(days=1)
+          p = Path("data/icon_attempt.json")
+          try:
+              last = datetime.fromisoformat(json.loads(p.read_text())["attempted_at"])
+          except (OSError, ValueError, KeyError, TypeError):
+              last = datetime.min.replace(tzinfo=timezone.utc)
+          run = last < slot
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("run_icon=" + str(run).lower() + "\n")
+          PY
 
       - name: Acquire ItaliaMeteo ICON-2I
         id: icon
@@ -128,6 +130,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 12
         run: |
+          python -c 'import json; from datetime import datetime, timezone; from pathlib import Path; Path("data/icon_attempt.json").write_text(json.dumps({"attempted_at": datetime.now(timezone.utc).isoformat()}))'
           python backend/icon_engine.py
 
       - name: Align ARGO observations with IRIDE and SINOTTICA

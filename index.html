@@ -302,10 +302,10 @@ padding:4px 1px!important;line-height:1.1!important}
 top:79px!important;right:5px!important;margin:0!important;
 border-radius:0 0 9px 9px!important;z-index:1250!important}
 /* Timestamp strip: presentation only. */
-.sib-times{height:54px;flex-shrink:0;background:#08182eef;border:1px solid #ffffff55;border-radius:0 0 8px 8px;padding:3px 8px;font:11px/15px Arial,sans-serif;color:#d7e7f4;font-variant-numeric:tabular-nums}
+.sib-times{height:69px;flex-shrink:0;background:#08182eef;border:1px solid #ffffff55;border-radius:0 0 8px 8px;padding:3px 8px;font:11px/15px Arial,sans-serif;color:#d7e7f4;font-variant-numeric:tabular-nums}
 .sib-times div{display:flex;justify-content:space-between;gap:4px;white-space:nowrap}
 .sib-times div:nth-child(2){color:#70e1ff;font-weight:bold}
-.models,html.embedded-mobile .models,html.sib-fullscreen .models{top:133px!important}
+.models,html.embedded-mobile .models,html.sib-fullscreen .models{top:148px!important}
 </style>
 </head>
 <body>
@@ -353,6 +353,7 @@ border-radius:0 0 9px 9px!important;z-index:1250!important}
 <div class="sib-times" aria-label="Orari della previsione in Italia">
 <div><span>Elaborazione</span><span id="sib-generated">—</span></div>
 <div><span id="sib-valid-label">Validità +4h</span><span id="sib-valid">—</span></div>
+<div><span>Orizzonte effettivo</span><span id="sib-effective">—</span></div>
 <div><span>Ora corrente</span><span id="sib-now">—</span></div>
 </div>
 </header>
@@ -625,14 +626,15 @@ for(const id of ids){
 const el=document.getElementById("light-"+id);
 el.className="light";
 if(recent&&report[id]==="success")el.classList.add("ok");
+if(id==="icon"&&recent&&report[id]==="skipped")el.style.background="#aab6c4";else el.style.background="";
 else if(recent&&report[id]==="failure")el.classList.add("fail");
 el.title=(id==="icon"?"ICON-2I":id.toUpperCase())+": "+
-(recent?String(report[id]||"sconosciuto"):"stato non recente");
+(recent?(id==="icon"&&report[id]==="skipped"?"Non programmato":String(report[id]||"sconosciuto")):"stato non recente");
 }
 document.getElementById("models-note").textContent=
 recent?"Ultima acquisizione":"Stato non aggiornato";
 const overall=document.getElementById("models-overall");
-overall.className="light"+(recent&&ids.every(id=>report[id]==="success")?" ok":"");
+overall.className="light"+(recent&&ids.every(id=>report[id]==="success"||(id==="icon"&&report[id]==="skipped"&&report.icon_scheduled===false))?" ok":"");
 }catch(e){
 for(const id of ids)
 document.getElementById("light-"+id).className="light";
@@ -646,6 +648,7 @@ status.textContent="CARICAMENTO +"+h+" ORE...";
 timeLabel.textContent="Validità +"+h+"h";
 timeGenerated.textContent="—";
 timeValid.textContent="Caricamento…";
+document.getElementById("sib-effective").textContent="—";
 try{
 const response=await fetch(
 "data/forecast/"+h+"h.geojson?t="+Date.now(),
@@ -685,6 +688,10 @@ model+" · +"+h+"H · "+items.length+
 " AREE TERRESTRI · VALIDO "+
 localTime(m.forecast_valid_at)+" · "+
 method+" · NON CALIBRATO";
+const effective=(valid-generated)/3600000;
+timeLabel.textContent="Validità +"+h+"h";
+timeLabel.title="Orizzonte effettivo: "+effective.toFixed(2)+" ore";
+document.getElementById("sib-effective").textContent=effective.toFixed(1)+" h";
 timeGenerated.textContent=formatMapTime(generated);
 timeValid.textContent=formatMapTime(valid);
 if(pulses.length&&!reduced)frame=requestAnimationFrame(animate);
@@ -694,6 +701,7 @@ clear();
 status.textContent=
 "PREVISIONE +"+h+"H NON DISPONIBILE · "+error.message;
 timeGenerated.textContent="N/D";
+document.getElementById("sib-effective").textContent="—";
 timeValid.textContent=error.message==="Dati scaduti"?"Dati scaduti":"Non disponibile";
 console.error("SIBILLA:",error);
 }}
