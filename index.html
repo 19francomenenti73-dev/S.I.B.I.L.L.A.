@@ -301,6 +301,11 @@ padding:4px 1px!important;line-height:1.1!important}
 .models,html.embedded-mobile .models,html.sib-fullscreen .models{
 top:79px!important;right:5px!important;margin:0!important;
 border-radius:0 0 9px 9px!important;z-index:1250!important}
+/* Timestamp strip: presentation only. */
+.sib-times{height:54px;flex-shrink:0;background:#08182eef;border:1px solid #ffffff55;border-radius:0 0 8px 8px;padding:3px 8px;font:11px/15px Arial,sans-serif;color:#d7e7f4;font-variant-numeric:tabular-nums}
+.sib-times div{display:flex;justify-content:space-between;gap:4px;white-space:nowrap}
+.sib-times div:nth-child(2){color:#70e1ff;font-weight:bold}
+.models,html.embedded-mobile .models,html.sib-fullscreen .models{top:133px!important}
 </style>
 </head>
 <body>
@@ -345,6 +350,11 @@ border-radius:0 0 9px 9px!important;z-index:1250!important}
 <button data-h="24">24 ORE</button>
 <button data-h="36">36 ORE</button>
 </nav>
+<div class="sib-times" aria-label="Orari della previsione in Italia">
+<div><span>Elaborazione</span><span id="sib-generated">—</span></div>
+<div><span id="sib-valid-label">Validità +4h</span><span id="sib-valid">—</span></div>
+<div><span>Ora corrente</span><span id="sib-now">—</span></div>
+</div>
 </header>
 <aside class="models" aria-label="Stato sorgenti"><button id="models-trigger" class="models-trigger" type="button" aria-expanded="false" aria-controls="models-detail">DATI <i class="light" id="models-overall"></i> <span class="models-arrow">▾</span></button><div class="models-detail" id="models-detail"><div class="models-title">RETE DATI · ACQUISIZIONE</div>
 <div class="model-row">GFS <i class="light" id="light-gfs"></i></div>
@@ -420,6 +430,17 @@ modelsTrigger.addEventListener("click",()=>{
 });
 const reduced=matchMedia("(prefers-reduced-motion:reduce)").matches;
 let horizon=4,requestId=0,frame=0,pulses=[],items=[];
+const timeGenerated=document.getElementById("sib-generated");
+const timeValid=document.getElementById("sib-valid");
+const timeLabel=document.getElementById("sib-valid-label");
+const timeNow=document.getElementById("sib-now");
+function formatMapTime(ms){
+ if(!Number.isFinite(ms))return "N/D";
+ return new Intl.DateTimeFormat("it-IT",{timeZone:"Europe/Rome",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",hourCycle:"h23",timeZoneName:"short"}).format(ms);
+}
+function updateMapClock(){timeNow.textContent=formatMapTime(Date.now());}
+updateMapClock();
+setInterval(updateMapClock,1000);
 function clear(){
 cancelAnimationFrame(frame);
 areas.clearLayers();waves.clearLayers();labels.clearLayers();
@@ -622,6 +643,9 @@ async function load(){
 const id=++requestId,h=horizon;
 clear();
 status.textContent="CARICAMENTO +"+h+" ORE...";
+timeLabel.textContent="Validità +"+h+"h";
+timeGenerated.textContent="—";
+timeValid.textContent="Caricamento…";
 try{
 const response=await fetch(
 "data/forecast/"+h+"h.geojson?t="+Date.now(),
@@ -661,12 +685,16 @@ model+" · +"+h+"H · "+items.length+
 " AREE TERRESTRI · VALIDO "+
 localTime(m.forecast_valid_at)+" · "+
 method+" · NON CALIBRATO";
+timeGenerated.textContent=formatMapTime(generated);
+timeValid.textContent=formatMapTime(valid);
 if(pulses.length&&!reduced)frame=requestAnimationFrame(animate);
 }catch(error){
 if(id!==requestId)return;
 clear();
 status.textContent=
 "PREVISIONE +"+h+"H NON DISPONIBILE · "+error.message;
+timeGenerated.textContent="N/D";
+timeValid.textContent=error.message==="Dati scaduti"?"Dati scaduti":"Non disponibile";
 console.error("SIBILLA:",error);
 }}
 document.querySelectorAll(".tabs button").forEach(b=>{
