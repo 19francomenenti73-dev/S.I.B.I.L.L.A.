@@ -71,6 +71,24 @@ def sample_wind(grid, lon, lat):
     return {"u_ms": u, "v_ms": v, "speed_kmh": round(math.hypot(u,v)*3.6,2),
             "grid_lat": ys[i], "grid_lon": xs[j]}
 
+def sample_pressure(grid, lon, lat):
+    if not grid:
+        return None
+    ys,xs,z = grid["lat"],grid["lon"],grid["values"]
+    if not min(ys)<=lat<=max(ys) or not min(xs)<=lon<=max(xs):
+        return None
+    i=min(range(len(ys)),key=lambda k:abs(ys[k]-lat))
+    j=min(range(len(xs)),key=lambda k:abs(xs[k]-lon))
+    result={"mslp_hpa":z[i][j],"grid_lat":ys[i],"grid_lon":xs[j]}
+    if 0<i<len(ys)-1 and 0<j<len(xs)-1:
+        dx=111.195*math.cos(math.radians(ys[i]))*(xs[j+1]-xs[j-1])
+        dy=111.195*(ys[i+1]-ys[i-1])
+        if abs(dx)>1e-6 and abs(dy)>1e-6:
+            east=100*(z[i][j+1]-z[i][j-1])/dx
+            north=100*(z[i+1][j]-z[i-1][j])/dy
+            result.update({"gradient_east_hpa_per_100km":round(east,3),"gradient_north_hpa_per_100km":round(north,3),"gradient_magnitude_hpa_per_100km":round(math.hypot(east,north),3)})
+    return result
+
 def main():
     now = datetime.now(timezone.utc)
     aligned = read(DATA / "aligned_inputs.json")
@@ -159,15 +177,19 @@ def main():
                     corridor.append({"track_id":v["id"],"source":v["source"],"minutes":minutes,"feature_indices":hits})
         frame = min(compatible, key=lambda f: abs((dt(f["valid_utc"])-valid).total_seconds())) if compatible else None
         context_count = 0
+        pressure_count = 0
         for i, feature in enumerate(candidate["features"]):
             if frame:
                 point = shape(feature["geometry"]).representative_point()
                 jet = sample_wind(frame.get("jet_250hpa"), point.x, point.y)
                 surface = sample_wind(frame.get("wind_10m"), point.x, point.y)
-                if jet or surface:
+                pressure = sample_pressure(frame.get('pressure_grid'), point.x, point.y)
+                if pressure:
+                    pressure_count += 1
+                if jet or surface or pressure:
                     context_count += 1
                     feature["properties"]["sinottica_context"] = {
-                        "jet_250hpa": jet, "wind_10m": surface,
+                        "jet_250hpa": jet, "wind_10m": surface, "pressure": pressure,
                         "valid_at": frame["valid_utc"], "run_at": frame["run_utc"],
                         "source": "NOAA GFS", "independent_model": False,
                         "sampling": "nearest_grid_at_polygon_representative_point"
@@ -192,6 +214,7 @@ def main():
             "polygon_matches_at_observation_time": matches,
             "sinottica_time_aligned_frames": len(compatible),
             "sinottica_context_polygons": context_count,
+            "sinottica_pressure_polygons": pressure_count,
             "radar_is_future_verification": False,
             "forecast_classes_changed": False
         }
