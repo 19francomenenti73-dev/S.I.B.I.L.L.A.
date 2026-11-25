@@ -9,6 +9,7 @@ import os
 import tempfile
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from shapely.geometry import Point, shape
 
 DATA = Path(__file__).resolve().parents[1] / "data"
 HORIZONS = (4, 8, 16, 24, 36)
@@ -72,7 +73,7 @@ def main():
     frames = sinottica.get("frames", []) if isinstance(sinottica, dict) else []
     report = {"generated_at": now.isoformat(), "product": "SIBILLA_SOURCE_FUSION",
               "observed_at": aligned["observed_at"],
-              "sources": {"argo": len(vectors), "iride": aligned.get("iride", {}),
+              "sources": {"argo": aligned.get("argo", {}), "iride": aligned.get("iride", {}),
                           "sinottica_frames": len(frames)},
               "horizons": {}, "forecast_modified": False}
     for h in HORIZONS:
@@ -97,14 +98,30 @@ def main():
                 if not math.isfinite(lat) or not math.isfinite(lon):
                     continue
                 if inside_geometry(lon, lat, geo):
-                    ids.append(v.get("argo_id"))
+                    ids.append(v.get("id"))
             if ids:
-                matches.append({"feature_index": index, "observed_argo_ids": ids})
+                matches.append({"feature_index": index, "observed_track_ids": ids})
         valid = dt(metadata["forecast_valid_at"])
         compatible = [f for f in frames if isinstance(f, dict) and
                       isinstance(f.get("valid_utc"), str) and
                       abs((dt(f["valid_utc"]) - valid).total_seconds()) <= 5400]
+        # Short-lived extrapolation only: never assume persistence for 4-36h.
+        evidence = []
+        if h in (4,8):
+            for v in vectors:
+                age_hours = (valid-dt(v["observed_at"])).total_seconds()/3600
+                if not 0 <= age_hours <= 3:
+                    continue
+                lat,lon = map(math.radians,(v["lat"],v["lon"]))
+                bearing = math.radians(v["direction_deg"])
+                arc = v["speed_kmh"]*age_hours/6371
+                q = math.asin(math.sin(lat)*math.cos(arc)+math.cos(lat)*math.sin(arc)*math.cos(bearing))
+                x = lon+math.atan2(math.sin(bearing)*math.sin(arc)*math.cos(lat),math.cos(arc)-math.sin(lat)*math.sin(q))
+                point = Point((math.degrees(x)+180)%360-180,math.degrees(q))
+                hits = [i for i,f in enumerate(features) if shape(f["geometry"]).covers(point)]
+                evidence.append({"track_id":v["id"],"source":v["source"],"projected_lon":point.x,"projected_lat":point.y,"feature_indices":hits})
         report["horizons"][str(h)] = {
+            "projected_track_evidence": evidence,
             "status": "diagnostic_only", "selected_model": metadata.get("selected_model"),
             "polygon_matches_at_observation_time": matches,
             "sinottica_time_aligned_frames": len(compatible),
