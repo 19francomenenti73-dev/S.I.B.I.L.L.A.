@@ -11,6 +11,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from shapely.geometry import Point, shape
 from copy import deepcopy
+from observation_assimilation import apply
 
 DATA = Path(__file__).resolve().parents[1] / "data"
 HORIZONS = (4, 8, 16, 24, 36)
@@ -162,6 +163,7 @@ def main():
         candidate = deepcopy(forecast)
         # Current motion corridors are contextual evidence, not survival forecasts.
         corridor = []
+        corridor_points = []
         if h in (4,8):
             for v in vectors:
                 if not 0 <= (now-dt(v["observed_at"])).total_seconds() <= 5400:
@@ -174,6 +176,7 @@ def main():
                     x = lon+math.atan2(math.sin(b)*math.sin(arc)*math.cos(lat),math.cos(arc)-math.sin(lat)*math.sin(q))
                     point = Point((math.degrees(x)+180)%360-180,math.degrees(q))
                     hits = [i for i,f in enumerate(features) if shape(f["geometry"]).covers(point)]
+                    corridor_points.append((v["source"]+":"+v["id"], point))
                     corridor.append({"track_id":v["id"],"source":v["source"],"minutes":minutes,"feature_indices":hits})
         frame = min(compatible, key=lambda f: abs((dt(f["valid_utc"])-valid).total_seconds())) if compatible else None
         context_count = 0
@@ -203,14 +206,17 @@ def main():
         candidate["metadata"]["radar_assimilation"] = "experimental_polygon_support"
         candidate["metadata"]["radar_observed_at"] = aligned["observed_at"]
         candidate["metadata"]["radar_support_available"] = bool(evidence)
-        candidate["metadata"]["radar_geometry_changed"] = False
+        added = apply(candidate, h, corridor_points)
+        candidate["metadata"]["radar_geometry_changed"] = bool(added)
+        candidate["metadata"]["radar_assimilation"] = "experimental_multimodel_radar_conditioned"
+        candidate["metadata"]["radar_added_polygons"] = added
         out = DATA / "experimental_forecast"
         out.mkdir(parents=True, exist_ok=True)
         atomic(out / f"{h}h.geojson", candidate)
         report["horizons"][str(h)] = {
             "projected_track_evidence": evidence,
             "corridor_context_samples": len(corridor),
-            "status": "diagnostic_only", "selected_model": metadata.get("selected_model"),
+            "status": "experimental_geometry" if added else "diagnostic_only", "radar_added_polygons": added, "selected_model": metadata.get("selected_model"),
             "polygon_matches_at_observation_time": matches,
             "sinottica_time_aligned_frames": len(compatible),
             "sinottica_context_polygons": context_count,
