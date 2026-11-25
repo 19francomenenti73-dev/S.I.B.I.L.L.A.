@@ -59,6 +59,18 @@ def inside_geometry(lon, lat, geometry):
                 return True
     return False
 
+def sample_wind(grid, lon, lat):
+    if not grid:
+        return None
+    ys, xs = grid["lat"], grid["lon"]
+    if not min(ys) <= lat <= max(ys) or not min(xs) <= lon <= max(xs):
+        return None
+    i = min(range(len(ys)), key=lambda i: abs(ys[i]-lat))
+    j = min(range(len(xs)), key=lambda j: abs(xs[j]-lon))
+    u, v = grid["u"][i][j], grid["v"][i][j]
+    return {"u_ms": u, "v_ms": v, "speed_kmh": round(math.hypot(u,v)*3.6,2),
+            "grid_lat": ys[i], "grid_lon": xs[j]}
+
 def main():
     now = datetime.now(timezone.utc)
     aligned = read(DATA / "aligned_inputs.json")
@@ -71,7 +83,13 @@ def main():
     if not isinstance(vectors, list):
         raise RuntimeError("Invalid aligned vectors")
     sinottica = read(DATA / "sinottica_intake.json")
-    frames = sinottica.get("frames", []) if isinstance(sinottica, dict) else []
+    frames = []
+    if isinstance(sinottica, dict):
+        try:
+            if -timedelta(minutes=10) <= now-dt(sinottica["acquired_utc"]) <= timedelta(minutes=90) and -timedelta(minutes=10) <= now-dt(sinottica["model_generated_utc"]) <= timedelta(hours=12):
+                frames = sinottica.get("frames", [])
+        except (KeyError, ValueError, TypeError):
+            pass
     report = {"generated_at": now.isoformat(), "product": "SIBILLA_SOURCE_FUSION",
               "observed_at": aligned["observed_at"],
               "sources": {"argo": aligned.get("argo", {}), "iride": aligned.get("iride", {}),
@@ -139,11 +157,27 @@ def main():
                     point = Point((math.degrees(x)+180)%360-180,math.degrees(q))
                     hits = [i for i,f in enumerate(features) if shape(f["geometry"]).covers(point)]
                     corridor.append({"track_id":v["id"],"source":v["source"],"minutes":minutes,"feature_indices":hits})
+        frame = min(compatible, key=lambda f: abs((dt(f["valid_utc"])-valid).total_seconds())) if compatible else None
+        context_count = 0
         for i, feature in enumerate(candidate["features"]):
+            if frame:
+                point = shape(feature["geometry"]).representative_point()
+                jet = sample_wind(frame.get("jet_250hpa"), point.x, point.y)
+                surface = sample_wind(frame.get("wind_10m"), point.x, point.y)
+                if jet or surface:
+                    context_count += 1
+                    feature["properties"]["sinottica_context"] = {
+                        "jet_250hpa": jet, "wind_10m": surface,
+                        "valid_at": frame["valid_utc"], "run_at": frame["run_utc"],
+                        "source": "NOAA GFS", "independent_model": False,
+                        "sampling": "nearest_grid_at_polygon_representative_point"
+                    }
             support = [e for e in evidence if i in e["feature_indices"]]
             feature["properties"]["radar_corridor_track_count"] = len({(e["source"],e["track_id"]) for e in corridor if i in e["feature_indices"]})
             feature["properties"]["radar_support_count"] = len(support)
             feature["properties"]["radar_support_sources"] = sorted({e["source"] for e in support})
+        candidate["metadata"]["sinottica_context_count"] = context_count
+        candidate["metadata"]["sinottica_forecast_modified"] = False
         candidate["metadata"]["radar_assimilation"] = "experimental_polygon_support"
         candidate["metadata"]["radar_observed_at"] = aligned["observed_at"]
         candidate["metadata"]["radar_support_available"] = bool(evidence)
@@ -157,6 +191,7 @@ def main():
             "status": "diagnostic_only", "selected_model": metadata.get("selected_model"),
             "polygon_matches_at_observation_time": matches,
             "sinottica_time_aligned_frames": len(compatible),
+            "sinottica_context_polygons": context_count,
             "radar_is_future_verification": False,
             "forecast_classes_changed": False
         }
