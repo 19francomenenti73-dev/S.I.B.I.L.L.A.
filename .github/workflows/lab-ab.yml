@@ -1,0 +1,44 @@
+name: SIBILLA LAB A-B isolated
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17,47 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: sibilla-lab-ab
+  cancel-in-progress: false
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: production
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: lab-ab-motion
+          path: experiment
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install shapely pyproj
+      - name: Generate B in disposable workspace
+        run: |
+          cp experiment/backend/observation_assimilation.py production/backend/
+          rm -rf production/data/experimental_forecast
+          python production/backend/fusion_context.py
+      - name: Archive and compare paired forecasts
+        run: python experiment/backend/lab_ab.py production/data experiment/data/lab_ab
+      - name: Publish only experimental branch
+        working-directory: experiment
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/lab_ab
+          git diff --cached --quiet && exit 0
+          git commit -m "LAB A-B paired diagnostics"
+          git push origin HEAD:lab-ab-motion
