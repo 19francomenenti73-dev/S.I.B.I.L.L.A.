@@ -33,8 +33,10 @@ for p in (src/"observations").glob("*.json"):
         o=read(p); obs.append((dt(o["observed_at"]),o))
     except (ValueError,KeyError): continue
 rows=[]
+archives=[]
 for p in sorted(out.glob("*h_*.json")):
     d=read(p); valid=dt(d["valid"])
+    archives.append({"id":p.stem,"horizon":d["horizon"],"valid":d["valid"],"issued":d["issued"],"added":d["B"]["metadata"].get("radar_added_polygons",0)})
     report=out/("result_"+p.name)
     if report.exists(): rows.append(read(report)); continue
     if (now-valid).total_seconds()<1800 or not obs: continue
@@ -48,4 +50,4 @@ for p in sorted(out.glob("*h_*.json")):
         distances=[pg.distance(transform(project,x))/1000 for x in pts] if not g.is_empty else []
         row[k]={"inside":sum(g.covers(x) for x in pts),"area_km2":pg.area/1e6,"mean_km":sum(distances)/len(distances) if distances else None}
     write(report,row); rows.append(row)
-write(out/"summary.json",{"generated_at":now.isoformat(),"pairs":rows,"note":"Paired centroid diagnostics; area expansion is not accuracy. T sample within 30 min."})
+write(out/"summary.json",{"generated_at":now.isoformat(),"pairs":rows,"archives":archives,"note":"Paired centroid diagnostics; area expansion is not accuracy. T sample within 30 min."})
