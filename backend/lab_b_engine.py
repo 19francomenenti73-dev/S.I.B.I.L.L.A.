@@ -136,7 +136,11 @@ for h,w in weights.items():
     ages=[(valid-tr[1]).total_seconds()/3600 for tr in tracks if 0<=(valid-tr[1]).total_seconds()<=21600]
     # Beyond four hours the endpoint is context, not a predicted position at validity.
     decay=max(0,1-max(0,min(ages,default=6)-4)/2)
-    cw=w[0]*decay if h==4 and not endpoint.is_empty else 0
+    if h in (8,16):
+        # Historical observed-motion corridors, not future cell positions.
+        endpoint=union(disk(tr,k/2) for tr in tracks for k in range(9)).intersection(support)
+        decay=1.0
+    cw=w[0]*decay if h in (4,8,16) and not endpoint.is_empty else 0
     nw=w[1]
     compatible=[f for f in frames if abs((dt(f["valid_utc"])-valid).total_seconds())<=5400 and f.get("jet_250hpa") and f.get("wind_10m")]
     frame=min(compatible,key=lambda f:abs((dt(f["valid_utc"])-valid).total_seconds())) if compatible else None
@@ -163,6 +167,6 @@ for h,w in weights.items():
         score=(nw*numeric+cw*int(endpoint.covers(p))+local_sw*(ss or 0)+local_ow*(os or 0))/(nw+cw+local_sw+local_ow)
         if score>=.2: groups["A" if score>=.75 else "B" if score>=.45 else "C"].append(cell)
     features=[feature(transform(back,g),{"class":c,"experimental":True}) for c,gs in groups.items() for g in polys(union(gs))]
-    metadata=dict(meta,lab_variant="B_v2_stage4",probability_calibrated=False,requested_weights=list(w),effective_weights={"motion":cw/total,"models":nw/total,"sinottica":sw/total,"orography":ow/total},orographic_cells_used=oro_used,terrain_grid_points=len(heights),terrain_source="NOAA NCEP GFS surface HGT 0.25 degree",synoptic_cells_used=syn_used,synoptic_cells_missing=syn_missing,synoptic_valid_at=frame["valid_utc"] if frame else None,model_weights={n:mw[n]/sum(mw[k] for k in models) for n in models},motion_endpoint_available=not endpoint.is_empty,motion_context_decay=decay,motion_context_max_hours=4,motion_context_validity_gap_hours=max(0,min(ages,default=6)-4) if h==4 else None,radar_added_polygons=0,limitations=["Upstream association; independent pairwise motion reconstruction; no split/merge detection","Model support domain only","Synoptic GFS wind contrast proxy, not independent or validated bulk shear; local weights vary with coverage; orographic upslope proxy on coarse GFS terrain; uncalibrated","Ordinal class thresholds provisional","Four-hour endpoint used as decaying context for validity up to six hours; not a position forecast beyond four hours"])
+    metadata=dict(meta,lab_variant="B_v2_stage5",probability_calibrated=False,requested_weights=list(w),effective_weights={"motion":cw/total,"models":nw/total,"sinottica":sw/total,"orography":ow/total},orographic_cells_used=oro_used,terrain_grid_points=len(heights),terrain_source="NOAA NCEP GFS surface HGT 0.25 degree",synoptic_cells_used=syn_used,synoptic_cells_missing=syn_missing,synoptic_valid_at=frame["valid_utc"] if frame else None,model_weights={n:mw[n]/sum(mw[k] for k in models) for n in models},motion_endpoint_available=not endpoint.is_empty,motion_context_decay=decay,motion_context_mode="bounded_endpoint" if h==4 else "observed_motion_corridor" if h in (8,16) else "none",motion_context_max_hours=4,motion_context_validity_gap_hours=max(0,min(ages,default=6)-4) if h==4 else None,radar_added_polygons=0,limitations=["Upstream association; independent pairwise motion reconstruction; no split/merge detection","Model support domain only","Synoptic GFS wind contrast proxy, not independent or validated bulk shear; local weights vary with coverage; orographic upslope proxy on coarse GFS terrain; uncalibrated","Ordinal class thresholds provisional","Four-hour endpoint used as decaying context for validity up to six hours; not a position forecast beyond four hours"])
     product={"type":"FeatureCollection","features":features,"metadata":metadata,"cones":{"type":"FeatureCollection","features":cones if h==4 else []}}
     (out/f"{h}h.geojson").write_text(json.dumps(product,separators=(",",":"),allow_nan=False))
