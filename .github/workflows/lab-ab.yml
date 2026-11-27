@@ -34,9 +34,8 @@ jobs:
       - name: Generate B in disposable workspace
         continue-on-error: true
         run: |
-          cp experiment/backend/observation_assimilation.py production/backend/
           rm -rf production/data/experimental_forecast
-          python production/backend/fusion_context.py
+          python experiment/backend/lab_b_engine.py production/data
       - name: Archive and compare paired forecasts
         if: always()
         run: python experiment/backend/lab_ab.py production/data experiment/data/lab_ab
