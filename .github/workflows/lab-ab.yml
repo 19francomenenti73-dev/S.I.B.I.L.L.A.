@@ -30,9 +30,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install shapely pyproj
+      - run: pip install shapely pyproj eccodes
       - name: Generate B in disposable workspace
-        continue-on-error: true
         run: |
           rm -rf production/data/experimental_forecast
           python experiment/backend/lab_b_engine.py production/data
