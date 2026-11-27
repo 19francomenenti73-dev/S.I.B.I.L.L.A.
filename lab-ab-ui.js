@@ -13,8 +13,9 @@ async function draw(id,t){
  if(!id){note.textContent="Nessuna proiezione archiviata.";return;}
  try{const q=await fetch(url.replace("summary.json",id+".json"),{cache:"no-store"});if(!q.ok)throw Error("HTTP "+q.status);const d=await q.json();if(t!==token||picker.value!==id)return;
  const group=L.featureGroup();for(const k of mode==="B"?["B"]:["A","B"]){const layer=L.geoJSON(d[k],{style:f=>({color:({A:"#e879f9",B:"#60a5fa",C:"#22d3ee"})[f.properties.class]||"#aaa",weight:k==="A"?2:3,dashArray:mode==="AB"&&k==="A"?"6 5":null,fillOpacity:k==="A"&&mode==="AB"?0:.18})}).addTo(mapB);group.addLayer(layer);}
+ if(d.B.cones){const layer=L.geoJSON(d.B.cones,{style:{color:"#fbbf24",weight:1.5,dashArray:"4 4",fillOpacity:.08}}).addTo(mapB);group.addLayer(layer);}
  if(group.getBounds().isValid())mapB.fitBounds(group.getBounds(),{maxZoom:7});
- note.textContent="Validità "+new Date(d.valid).toLocaleString("it-IT",{timeZone:"Europe/Rome"})+" · Poligoni aggiunti B: "+(d.B.metadata.radar_added_polygons??0)+(mode==="AB"?" · A tratteggiato, B continuo":"")+" · Classi A magenta, B blu, C ciano";
+ note.textContent="Validità "+new Date(d.valid).toLocaleString("it-IT",{timeZone:"Europe/Rome"})+" · "+(d.B.metadata.lab_variant||"legacy")+" · Coni: "+(d.B.cones?.features?.length||0)+(mode==="AB"?" · A tratteggiato, B continuo":"")+" · Classi A magenta, B blu, C ciano";
  }catch(e){if(t===token)note.textContent="Mappa non disponibile: "+e.message;}
 }
 const fmt=(n,s="")=>Number.isFinite(n)?n.toLocaleString("it-IT",{maximumFractionDigits:1})+s:"—";
@@ -23,7 +24,7 @@ async function render(){
  try{
  const response=await fetch(url,{cache:"no-store"});if(!response.ok)throw Error("HTTP "+response.status);
  const d=await response.json();if(t!==token)return;
- const rows=(d.pairs||[]).filter(x=>x.horizon===horizon).sort((a,b)=>Date.parse(b.valid)-Date.parse(a.valid));
+ const rows=(d.pairs||[]).filter(x=>x.horizon===horizon&&x.variant==="B_v2_stage1").sort((a,b)=>Date.parse(b.valid)-Date.parse(a.valid));
  status.textContent="+"+horizon+"h · "+rows.length+" verifiche appaiate · "+new Date(d.generated_at).toLocaleString("it-IT");
  const archives=(d.archives||d.pairs||[]).filter(x=>x.horizon===horizon).sort((a,b)=>Date.parse(b.valid)-Date.parse(a.valid));picker.replaceChildren();for(const x of archives){const o=document.createElement("option");o.value=x.id;o.textContent=new Date(x.valid).toLocaleString("it-IT",{timeZone:"Europe/Rome"})+(rows.some(r=>r.id===x.id)?" · verificata":" · in attesa");picker.append(o);}picker.onchange=()=>draw(picker.value,t);draw(picker.value,t);status.textContent+=" · "+archives.length+" archivi";
  if(!rows.length){results.textContent="Nessuna verifica maturata. Non equivale a zero percento.";return;}
