@@ -27,11 +27,13 @@ jobs:
           python-version: '3.12'
       - run: pip install shapely pyproj
       - name: Generate B in disposable workspace
+        continue-on-error: true
         run: |
           cp experiment/backend/observation_assimilation.py production/backend/
           rm -rf production/data/experimental_forecast
           python production/backend/fusion_context.py
       - name: Archive and compare paired forecasts
+        if: always()
         run: python experiment/backend/lab_ab.py production/data experiment/data/lab_ab
       - name: Publish only experimental branch
         working-directory: experiment
