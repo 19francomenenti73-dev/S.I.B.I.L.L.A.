@@ -32,6 +32,25 @@ try:
     vectors=aligned["vectors"]
 except (OSError,ValueError,KeyError): vectors=[]
 tracks=[]
+try:
+    syn=read(root/"sinottica_intake.json")
+    frames=syn["frames"] if 0<=(now-dt(syn["acquired_utc"])).total_seconds()<=5400 and 0<=(now-dt(syn["model_generated_utc"])).total_seconds()<=43200 else []
+except (OSError,ValueError,KeyError,TypeError): frames=[]
+def wind(grid,lon,lat):
+    if not grid: return None
+    ys,xs=grid["lat"],grid["lon"]
+    if not min(xs)<=lon<=max(xs) or not min(ys)<=lat<=max(ys): return None
+    i=min(range(len(ys)),key=lambda i:abs(ys[i]-lat))
+    j=min(range(len(xs)),key=lambda j:abs(xs[j]-lon))
+    return grid["u"][i][j],grid["v"][i][j]
+def syn_score(frame,p):
+    if not frame: return None
+    q=transform(back,p)
+    a=wind(frame.get("jet_250hpa"),q.x,q.y)
+    b=wind(frame.get("wind_10m"),q.x,q.y)
+    if a is None or b is None: return None
+    return min(1,math.hypot(a[0]-b[0],a[1]-b[1])/40)
+
 for v in vectors:
     try:
         t=dt(v["observed_at"])
@@ -85,7 +104,13 @@ for h,w in weights.items():
     # Beyond four hours the endpoint is context, not a predicted position at validity.
     decay=max(0,1-max(0,min(ages,default=6)-4)/2)
     cw=w[0]*decay if h==4 and not endpoint.is_empty else 0
-    nw=w[1]; total=cw+nw
+    nw=w[1]
+    compatible=[f for f in frames if abs((dt(f["valid_utc"])-valid).total_seconds())<=5400 and f.get("jet_250hpa") and f.get("wind_10m")]
+    frame=min(compatible,key=lambda f:abs((dt(f["valid_utc"])-valid).total_seconds())) if compatible else None
+    sw=w[2] if frame else 0
+    total=cw+nw+sw
+    syn_used=0
+    syn_missing=0
     boundaries=[g.boundary for m in models.values() for g in m.values() if not g.is_empty]
     if not endpoint.is_empty: boundaries.append(endpoint.boundary)
     groups={c:[] for c in "ABC"}
@@ -93,9 +118,13 @@ for h,w in weights.items():
         p=cell.representative_point()
         if not support.covers(p): continue
         numeric=sum(mw[n]*max((s for c,s in zip("ABC",(1,.66,.33)) if m[c].covers(p)),default=0) for n,m in models.items())/sum(mw[n] for n in models)
-        score=(nw*numeric+cw*int(endpoint.covers(p)))/total
+        ss=syn_score(frame,p)
+        local_sw=sw if ss is not None else 0
+        syn_used+=int(ss is not None)
+        syn_missing+=int(ss is None)
+        score=(nw*numeric+cw*int(endpoint.covers(p))+local_sw*(ss or 0))/(nw+cw+local_sw)
         if score>=.2: groups["A" if score>=.75 else "B" if score>=.45 else "C"].append(cell)
     features=[feature(transform(back,g),{"class":c,"experimental":True}) for c,gs in groups.items() for g in polys(union(gs))]
-    metadata=dict(meta,lab_variant="B_v2_stage3",probability_calibrated=False,requested_weights=list(w),effective_weights={"motion":cw/total,"models":nw/total,"sinottica":0,"orography":0},model_weights={n:mw[n]/sum(mw[k] for k in models) for n in models},motion_endpoint_available=not endpoint.is_empty,motion_context_decay=decay,motion_context_max_hours=4,motion_context_validity_gap_hours=max(0,min(ages,default=6)-4) if h==4 else None,radar_added_polygons=0,limitations=["Upstream association; independent pairwise motion reconstruction; no split/merge detection","Model support domain only","Synoptic and orographic scores not implemented","Ordinal class thresholds provisional","Four-hour endpoint used as decaying context for validity up to six hours; not a position forecast beyond four hours"])
+    metadata=dict(meta,lab_variant="B_v2_stage3",probability_calibrated=False,requested_weights=list(w),effective_weights={"motion":cw/total,"models":nw/total,"sinottica":sw/total,"orography":0},synoptic_cells_used=syn_used,synoptic_cells_missing=syn_missing,synoptic_valid_at=frame["valid_utc"] if frame else None,model_weights={n:mw[n]/sum(mw[k] for k in models) for n in models},motion_endpoint_available=not endpoint.is_empty,motion_context_decay=decay,motion_context_max_hours=4,motion_context_validity_gap_hours=max(0,min(ages,default=6)-4) if h==4 else None,radar_added_polygons=0,limitations=["Upstream association; independent pairwise motion reconstruction; no split/merge detection","Model support domain only","Synoptic GFS wind contrast proxy, not independent or validated bulk shear; local weights vary with coverage; orography not implemented","Ordinal class thresholds provisional","Four-hour endpoint used as decaying context for validity up to six hours; not a position forecast beyond four hours"])
     product={"type":"FeatureCollection","features":features,"metadata":metadata,"cones":{"type":"FeatureCollection","features":cones if h==4 else []}}
     (out/f"{h}h.geojson").write_text(json.dumps(product,separators=(",",":"),allow_nan=False))
