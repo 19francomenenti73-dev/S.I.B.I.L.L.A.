@@ -110,6 +110,26 @@ def disk(track,h):
     x,y,_=geod.fwd(lon,lat,bearing,speed*h*1000)
     # Uncalibrated radius: initial 10 km plus 15 km/h.
     return transform(forward,Point(x,y)).buffer(10000+15000*h)
+# Candidate associations between synchronous observed centroid pairs.
+# Proximity alone cannot establish physical merging or splitting.
+events=[]
+pairs=[]
+for tr in tracks:
+    v,t,*_=tr
+    pts=sorted(v.get("track_points",[]),key=lambda p:dt(p["timestamp"]))
+    if len(pts)>=2:
+        a,b=pts[-2:]
+        if 0<(dt(b["timestamp"])-dt(a["timestamp"])).total_seconds()<=2700:
+            pairs.append((v,a,b))
+for i,(v,a,b) in enumerate(pairs):
+    for u,c,d in pairs[i+1:]:
+        if v["source"]!=u["source"] or v["id"]==u["id"]: continue
+        if abs((dt(a["timestamp"])-dt(c["timestamp"])).total_seconds())>60 or abs((dt(b["timestamp"])-dt(d["timestamp"])).total_seconds())>60: continue
+        _,_,before=geod.inv(a["lon"],a["lat"],c["lon"],c["lat"])
+        _,_,after=geod.inv(b["lon"],b["lat"],d["lon"],d["lat"])
+        kind="merge_candidate" if before>=20000 and after<=10000 else "split_candidate" if before<=10000 and after>=20000 else None
+        if kind:
+            events.append({"type":kind,"track_ids":[v["id"],u["id"]],"source":v["source"],"observed_at":b["timestamp"],"before_km":before/1000,"after_km":after/1000,"confirmed":False})
 cones=[]
 for track in tracks:
     v,t,*_=track
@@ -167,6 +187,6 @@ for h,w in weights.items():
         score=(nw*numeric+cw*int(endpoint.covers(p))+local_sw*(ss or 0)+local_ow*(os or 0))/(nw+cw+local_sw+local_ow)
         if score>=.2: groups["A" if score>=.75 else "B" if score>=.45 else "C"].append(cell)
     features=[feature(transform(back,g),{"class":c,"experimental":True}) for c,gs in groups.items() for g in polys(union(gs))]
-    metadata=dict(meta,lab_variant="B_v2_stage5",probability_calibrated=False,requested_weights=list(w),effective_weights={"motion":cw/total,"models":nw/total,"sinottica":sw/total,"orography":ow/total},orographic_cells_used=oro_used,terrain_grid_points=len(heights),terrain_source="NOAA NCEP GFS surface HGT 0.25 degree",synoptic_cells_used=syn_used,synoptic_cells_missing=syn_missing,synoptic_valid_at=frame["valid_utc"] if frame else None,model_weights={n:mw[n]/sum(mw[k] for k in models) for n in models},motion_endpoint_available=not endpoint.is_empty,motion_context_decay=decay,motion_context_mode="bounded_endpoint" if h==4 else "observed_motion_corridor" if h in (8,16) else "none",motion_context_max_hours=4,motion_context_validity_gap_hours=max(0,min(ages,default=6)-4) if h==4 else None,radar_added_polygons=0,limitations=["Upstream association; independent pairwise motion reconstruction; no split/merge detection","Model support domain only","Synoptic GFS wind contrast proxy, not independent or validated bulk shear; local weights vary with coverage; orographic upslope proxy on coarse GFS terrain; uncalibrated","Ordinal class thresholds provisional","Four-hour endpoint used as decaying context for validity up to six hours; not a position forecast beyond four hours"])
+    metadata=dict(meta,lab_variant="B_v2_stage6",probability_calibrated=False,requested_weights=list(w),effective_weights={"motion":cw/total,"models":nw/total,"sinottica":sw/total,"orography":ow/total},orographic_cells_used=oro_used,terrain_grid_points=len(heights),terrain_source="NOAA NCEP GFS surface HGT 0.25 degree",synoptic_cells_used=syn_used,synoptic_cells_missing=syn_missing,synoptic_valid_at=frame["valid_utc"] if frame else None,model_weights={n:mw[n]/sum(mw[k] for k in models) for n in models},motion_endpoint_available=not endpoint.is_empty,motion_context_decay=decay,motion_context_mode="bounded_endpoint" if h==4 else "observed_motion_corridor" if h in (8,16) else "none",motion_context_max_hours=4,motion_context_validity_gap_hours=max(0,min(ages,default=6)-4) if h==4 else None,association_candidates=events if h==4 else [],association_pairs_count=len(pairs),radar_added_polygons=0,limitations=["Upstream association; independent pairwise motion reconstruction; geometric split/merge candidates only; no confirmed object topology","Model support domain only","Synoptic GFS wind contrast proxy, not independent or validated bulk shear; local weights vary with coverage; orographic upslope proxy on coarse GFS terrain; uncalibrated","Ordinal class thresholds provisional","Four-hour endpoint used as decaying context for validity up to six hours; not a position forecast beyond four hours"])
     product={"type":"FeatureCollection","features":features,"metadata":metadata,"cones":{"type":"FeatureCollection","features":cones if h==4 else []}}
     (out/f"{h}h.geojson").write_text(json.dumps(product,separators=(",",":"),allow_nan=False))
