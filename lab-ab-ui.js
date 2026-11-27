@@ -24,9 +24,9 @@ async function render(){
  try{
  const response=await fetch(url,{cache:"no-store"});if(!response.ok)throw Error("HTTP "+response.status);
  const d=await response.json();if(t!==token)return;
- const rows=(d.pairs||[]).filter(x=>x.horizon===horizon&&x.variant==="B_v2_stage4").sort((a,b)=>Date.parse(b.valid)-Date.parse(a.valid));
+ const rows=(d.pairs||[]).filter(x=>x.horizon===horizon&&x.variant==="B_v2_stage5").sort((a,b)=>Date.parse(b.valid)-Date.parse(a.valid));
  status.textContent="+"+horizon+"h · "+rows.length+" verifiche appaiate · "+new Date(d.generated_at).toLocaleString("it-IT");
- const archives=(d.archives||d.pairs||[]).filter(x=>x.horizon===horizon&&x.variant==="B_v2_stage4").sort((a,b)=>Date.parse(b.valid)-Date.parse(a.valid));picker.replaceChildren();for(const x of archives){const o=document.createElement("option");o.value=x.id;o.textContent=new Date(x.valid).toLocaleString("it-IT",{timeZone:"Europe/Rome"})+(rows.some(r=>r.id===x.id)?" · verificata":" · in attesa");picker.append(o);}picker.onchange=()=>draw(picker.value,t);draw(picker.value,t);status.textContent+=" · "+archives.length+" archivi";
+ const archives=(d.archives||d.pairs||[]).filter(x=>x.horizon===horizon&&x.variant==="B_v2_stage5").sort((a,b)=>Date.parse(b.valid)-Date.parse(a.valid));picker.replaceChildren();for(const x of archives){const o=document.createElement("option");o.value=x.id;o.textContent=new Date(x.valid).toLocaleString("it-IT",{timeZone:"Europe/Rome"})+(rows.some(r=>r.id===x.id)?" · verificata":" · in attesa");picker.append(o);}picker.onchange=()=>draw(picker.value,t);draw(picker.value,t);status.textContent+=" · "+archives.length+" archivi";
  if(!rows.length){results.textContent="Nessuna verifica maturata. Non equivale a zero percento.";return;}
  const table=document.createElement("table");table.style.cssText="width:100%;text-align:left;font-size:inherit";
  const add=(cells,head=false)=>{const tr=table.insertRow();for(const v of cells){const c=document.createElement(head?"th":"td");c.textContent=v;tr.append(c);}};
