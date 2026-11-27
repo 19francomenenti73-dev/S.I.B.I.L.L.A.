@@ -43,6 +43,39 @@ def wind(grid,lon,lat):
     i=min(range(len(ys)),key=lambda i:abs(ys[i]-lat))
     j=min(range(len(xs)),key=lambda j:abs(xs[j]-lon))
     return grid["u"][i][j],grid["v"][i][j]
+def terrain():
+    import urllib.request, urllib.parse, tempfile
+    from datetime import timedelta
+    try:
+        import eccodes as ec
+        run=now-timedelta(hours=8)
+        cycle=run.hour//6*6
+        query=urllib.parse.urlencode({"file":f"gfs.t{cycle:02d}z.pgrb2.0p25.f000","var_HGT":"on","lev_surface":"on","subregion":"","leftlon":-15,"rightlon":45,"toplat":55,"bottomlat":25,"dir":f"/gfs.{run:%Y%m%d}/{cycle:02d}/atmos"})
+        url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?"+query
+        with urllib.request.urlopen(url,timeout=35) as response: raw=response.read(8000001)
+        if len(raw)>8000000 or not raw.startswith(b"GRIB"): return {}
+        with tempfile.TemporaryFile() as f:
+            f.write(raw); f.seek(0)
+            g=ec.codes_grib_new_from_file(f)
+            if g is None: return {}
+            try:
+                if ec.codes_get(g,"typeOfLevel")!="surface": return {}
+                return {(round(float(y),2),round((float(x)+180)%360-180,2)):float(z) for y,x,z in zip(ec.codes_get_array(g,"latitudes"),ec.codes_get_array(g,"longitudes"),ec.codes_get_values(g)) if math.isfinite(z) and -500<=z<=9000}
+            finally: ec.codes_release(g)
+    except Exception as exc:
+        print("Terrain unavailable:",str(exc)[:200]); return {}
+heights=terrain()
+def oro_score(frame,p):
+    if not frame or not heights: return None
+    q=transform(back,p)
+    y=round(q.y*4)/4; x=round(q.x*4)/4
+    uv=wind(frame.get("wind_10m"),q.x,q.y)
+    if uv is None: return None
+    try:
+        dx=(heights[y,x+.25]-heights[y,x-.25])/(55660*math.cos(math.radians(y)))
+        dy=(heights[y+.25,x]-heights[y-.25,x])/55660
+    except KeyError: return None
+    return min(1,max(0,uv[0]*dx+uv[1]*dy)/.3)
 def syn_score(frame,p):
     if not frame: return None
     q=transform(back,p)
@@ -108,7 +141,9 @@ for h,w in weights.items():
     compatible=[f for f in frames if abs((dt(f["valid_utc"])-valid).total_seconds())<=5400 and f.get("jet_250hpa") and f.get("wind_10m")]
     frame=min(compatible,key=lambda f:abs((dt(f["valid_utc"])-valid).total_seconds())) if compatible else None
     sw=w[2] if frame else 0
-    total=cw+nw+sw
+    ow=w[3] if heights and frame else 0
+    total=cw+nw+sw+ow
+    oro_used=0
     syn_used=0
     syn_missing=0
     boundaries=[g.boundary for m in models.values() for g in m.values() if not g.is_empty]
@@ -122,9 +157,12 @@ for h,w in weights.items():
         local_sw=sw if ss is not None else 0
         syn_used+=int(ss is not None)
         syn_missing+=int(ss is None)
-        score=(nw*numeric+cw*int(endpoint.covers(p))+local_sw*(ss or 0))/(nw+cw+local_sw)
+        os=oro_score(frame,p) if ow else None
+        local_ow=ow if os is not None else 0
+        oro_used+=int(os is not None)
+        score=(nw*numeric+cw*int(endpoint.covers(p))+local_sw*(ss or 0)+local_ow*(os or 0))/(nw+cw+local_sw+local_ow)
         if score>=.2: groups["A" if score>=.75 else "B" if score>=.45 else "C"].append(cell)
     features=[feature(transform(back,g),{"class":c,"experimental":True}) for c,gs in groups.items() for g in polys(union(gs))]
-    metadata=dict(meta,lab_variant="B_v2_stage3",probability_calibrated=False,requested_weights=list(w),effective_weights={"motion":cw/total,"models":nw/total,"sinottica":sw/total,"orography":0},synoptic_cells_used=syn_used,synoptic_cells_missing=syn_missing,synoptic_valid_at=frame["valid_utc"] if frame else None,model_weights={n:mw[n]/sum(mw[k] for k in models) for n in models},motion_endpoint_available=not endpoint.is_empty,motion_context_decay=decay,motion_context_max_hours=4,motion_context_validity_gap_hours=max(0,min(ages,default=6)-4) if h==4 else None,radar_added_polygons=0,limitations=["Upstream association; independent pairwise motion reconstruction; no split/merge detection","Model support domain only","Synoptic GFS wind contrast proxy, not independent or validated bulk shear; local weights vary with coverage; orography not implemented","Ordinal class thresholds provisional","Four-hour endpoint used as decaying context for validity up to six hours; not a position forecast beyond four hours"])
+    metadata=dict(meta,lab_variant="B_v2_stage4",probability_calibrated=False,requested_weights=list(w),effective_weights={"motion":cw/total,"models":nw/total,"sinottica":sw/total,"orography":ow/total},orographic_cells_used=oro_used,terrain_grid_points=len(heights),terrain_source="NOAA NCEP GFS surface HGT 0.25 degree",synoptic_cells_used=syn_used,synoptic_cells_missing=syn_missing,synoptic_valid_at=frame["valid_utc"] if frame else None,model_weights={n:mw[n]/sum(mw[k] for k in models) for n in models},motion_endpoint_available=not endpoint.is_empty,motion_context_decay=decay,motion_context_max_hours=4,motion_context_validity_gap_hours=max(0,min(ages,default=6)-4) if h==4 else None,radar_added_polygons=0,limitations=["Upstream association; independent pairwise motion reconstruction; no split/merge detection","Model support domain only","Synoptic GFS wind contrast proxy, not independent or validated bulk shear; local weights vary with coverage; orographic upslope proxy on coarse GFS terrain; uncalibrated","Ordinal class thresholds provisional","Four-hour endpoint used as decaying context for validity up to six hours; not a position forecast beyond four hours"])
     product={"type":"FeatureCollection","features":features,"metadata":metadata,"cones":{"type":"FeatureCollection","features":cones if h==4 else []}}
     (out/f"{h}h.geojson").write_text(json.dumps(product,separators=(",",":"),allow_nan=False))
