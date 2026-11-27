@@ -5,7 +5,15 @@ let mode="A", horizon=4, token=0, mapB=null;
 
 const url="https://raw.githubusercontent.com/19francomenenti73-dev/S.I.B.I.L.L.A./lab-ab-motion/data/lab_ab/summary.json";
 const mapBox=document.createElement("div");mapBox.style.cssText="height:clamp(160px,32vh,320px);border-radius:6px;margin:5px 0";panel.insertBefore(mapBox,results);
-const picker=document.createElement("select");picker.style.width="100%";panel.insertBefore(picker,mapBox);
+
+const wrap=document.createElement("div");wrap.style.position="relative";mapBox.before(wrap);wrap.append(mapBox);
+const full=document.createElement("button");full.textContent="⛶ Schermo intero";full.style.cssText="position:absolute;right:8px;top:8px;z-index:1000;font-size:12px;padding:7px;background:#17283b";wrap.append(full);
+const style=document.createElement("style");style.textContent="#abPanel .abExpanded,#abPanel .abMapWrap:fullscreen{position:fixed;inset:0;width:100%;height:100%;margin:0;background:#111c28;z-index:9999}#abPanel .abExpanded .abMap,#abPanel .abMapWrap:fullscreen .abMap{height:100dvh!important;margin:0!important;border-radius:0!important}";document.head.append(style);wrap.className="abMapWrap";mapBox.classList.add("abMap");
+function syncFull(){const active=document.fullscreenElement===wrap||wrap.classList.contains("abExpanded");full.textContent=active?"✕ Esci":"⛶ Schermo intero";full.setAttribute("aria-label",active?"Esci da schermo intero":"Schermo intero");document.body.classList.toggle("labexpanded",active);requestAnimationFrame(()=>mapB?.invalidateSize());}
+full.onclick=async()=>{if(document.fullscreenElement===wrap){await document.exitFullscreen();}else if(wrap.classList.contains("abExpanded")){wrap.classList.remove("abExpanded");}else{try{if(!wrap.requestFullscreen)throw Error("unsupported");await wrap.requestFullscreen();}catch{wrap.classList.add("abExpanded");}}syncFull();};
+document.addEventListener("fullscreenchange",()=>{if(mode!=="A")syncFull();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&wrap.classList.contains("abExpanded")){wrap.classList.remove("abExpanded");syncFull();}});
+const picker=document.createElement("select");picker.style.width="100%";panel.insertBefore(picker,wrap);
 const note=document.createElement("p");panel.insertBefore(note,results);
 async function draw(id,t){
  if(!mapB){mapB=L.map(mapBox).setView([42,12],5);L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap contributors",maxZoom:19}).addTo(mapB);}
