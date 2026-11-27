@@ -23,7 +23,7 @@ for h in (4,8,16,24,36):
     issued=dt(m["selection_generated_at"])
     valid=dt(m["forecast_valid_at"])
     if not issued<=now<valid: continue
-    key=hashlib.sha256(a.read_bytes()).hexdigest()[:20]
+    key=hashlib.sha256(a.read_bytes()+B["metadata"].get("lab_variant","legacy").encode()).hexdigest()[:20]
     p=out/f"{h}h_{key}.json"
     if not p.exists():
         write(p,{"horizon":h,"issued":issued.isoformat(),"valid":valid.isoformat(),"captured":now.isoformat(),"A":A,"B":B})
@@ -42,14 +42,14 @@ for p in sorted(out.glob("*h_*.json")):
         print("Skipping non-forecast archive:", p.name)
         continue
     valid=dt(d["valid"])
-    archives.append({"id":p.stem,"horizon":d["horizon"],"valid":d["valid"],"issued":d["issued"],"added":d["B"]["metadata"].get("radar_added_polygons",0)})
+    archives.append({"id":p.stem,"horizon":d["horizon"],"valid":d["valid"],"issued":d["issued"],"added":d["B"]["metadata"].get("radar_added_polygons",0),"variant":d["B"]["metadata"].get("lab_variant","legacy")})
     report=out/("result_"+p.name)
     if report.exists(): rows.append(read(report)); continue
     if (now-valid).total_seconds()<1800 or not obs: continue
     t,o=min(obs,key=lambda x:abs((x[0]-valid).total_seconds()))
     if abs((t-valid).total_seconds())>1800: continue
     pts=[Point(c["lon"],c["lat"]) for c in o["cells"] if isinstance(c.get("lon"),(int,float)) and isinstance(c.get("lat"),(int,float)) and math.isfinite(c["lon"]) and math.isfinite(c["lat"])]
-    row={"id":p.stem,"horizon":d["horizon"],"valid":d["valid"],"observed":t.isoformat(),"n":len(pts)}
+    row={"id":p.stem,"horizon":d["horizon"],"valid":d["valid"],"observed":t.isoformat(),"n":len(pts),"variant":d["B"]["metadata"].get("lab_variant","legacy")}
     for k in ("A","B"):
         g=unary_union([shape(f["geometry"]) for f in d[k]["features"]])
         pg=transform(project,g)
