@@ -35,7 +35,13 @@ for p in (src/"observations").glob("*.json"):
 rows=[]
 archives=[]
 for p in sorted(out.glob("*h_*.json")):
-    d=read(p); valid=dt(d["valid"])
+    if p.name.startswith("result_"):
+        continue
+    d=read(p)
+    if not all(k in d for k in ("issued","valid","horizon","A","B")) or not all(isinstance(d[k],dict) and "features" in d[k] for k in ("A","B")):
+        print("Skipping non-forecast archive:", p.name)
+        continue
+    valid=dt(d["valid"])
     archives.append({"id":p.stem,"horizon":d["horizon"],"valid":d["valid"],"issued":d["issued"],"added":d["B"]["metadata"].get("radar_added_polygons",0)})
     report=out/("result_"+p.name)
     if report.exists(): rows.append(read(report)); continue
