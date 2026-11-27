@@ -3,6 +3,7 @@ import json, math, hashlib, sys
 from pathlib import Path
 from datetime import datetime, timezone
 from shapely.geometry import shape, Point
+from shapely.validation import make_valid
 from shapely.ops import unary_union, transform
 from pyproj import Transformer
 
@@ -13,6 +14,30 @@ def write(p,x): p.write_text(json.dumps(x, separators=(",",":"), allow_nan=False
 def dt(x): return datetime.fromisoformat(x.replace("Z","+00:00"))
 now=datetime.now(timezone.utc)
 project=Transformer.from_crs(4326,3035,always_xy=True).transform
+def polygon_parts(g):
+    if g.is_empty: return []
+    if g.geom_type == "Polygon": return [g]
+    if hasattr(g, "geoms"):
+        return [p for part in g.geoms for p in polygon_parts(part)]
+    return []
+
+def diagnostic_union(features):
+    parts=[]
+    repaired=0
+    collapsed=0
+    for f in features:
+        g=shape(f["geometry"])
+        if not g.is_valid:
+            g=make_valid(g)
+            repaired+=1
+        polygons=polygon_parts(g)
+        if not polygons: collapsed+=1
+        parts.extend(polygons)
+    g=unary_union(parts)
+    if not g.is_valid:
+        g=unary_union(polygon_parts(make_valid(g)))
+    return g, repaired, collapsed
+
 for h in (4,8,16,24,36):
     a=src/"forecast"/f"{h}h.geojson"
     b=src/"experimental_forecast"/f"{h}h.geojson"
@@ -51,9 +76,10 @@ for p in sorted(out.glob("*h_*.json")):
     pts=[Point(c["lon"],c["lat"]) for c in o["cells"] if isinstance(c.get("lon"),(int,float)) and isinstance(c.get("lat"),(int,float)) and math.isfinite(c["lon"]) and math.isfinite(c["lat"])]
     row={"id":p.stem,"horizon":d["horizon"],"valid":d["valid"],"observed":t.isoformat(),"n":len(pts),"variant":d["B"]["metadata"].get("lab_variant","legacy")}
     for k in ("A","B"):
-        g=unary_union([shape(f["geometry"]) for f in d[k]["features"]])
+        g,repaired,collapsed=diagnostic_union(d[k]["features"])
+        if repaired or collapsed: print(p.name,k,"repaired:",repaired,"without polygon area:",collapsed)
         pg=transform(project,g)
         distances=[pg.distance(transform(project,x))/1000 for x in pts] if not g.is_empty else []
-        row[k]={"inside":sum(g.covers(x) for x in pts),"area_km2":pg.area/1e6,"mean_km":sum(distances)/len(distances) if distances else None}
+        row[k]={"inside":sum(g.covers(x) for x in pts),"area_km2":pg.area/1e6,"mean_km":sum(distances)/len(distances) if distances else None,"geometry_repaired":repaired,"geometry_collapsed":collapsed}
     write(report,row); rows.append(row)
 write(out/"summary.json",{"generated_at":now.isoformat(),"pairs":rows,"archives":archives,"note":"Paired centroid diagnostics; area expansion is not accuracy. T sample within 30 min."})
