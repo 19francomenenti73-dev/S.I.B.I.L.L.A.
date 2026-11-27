@@ -38,6 +38,19 @@ for v in vectors:
         lon,lat,speed,bearing=map(float,(v["lon"],v["lat"],v["speed_kmh"],v["direction_deg"]))
         if not all(map(math.isfinite,(lon,lat,speed,bearing))) or not 0<=speed<=200 or not 0<=(now-t).total_seconds()<=5400: continue
         if not -180<=lon<=180 or not -90<=lat<=90: continue
+        points=sorted(v.get("track_points",[]),key=lambda p:dt(p["timestamp"]))
+        segments=[]
+        for a,b in zip(points,points[1:]):
+            hours=(dt(b["timestamp"])-dt(a["timestamp"])).total_seconds()/3600
+            if not 0<hours<=.75: continue
+            az,_,dist=geod.inv(a["lon"],a["lat"],b["lon"],b["lat"])
+            s=dist/1000/hours
+            if 0<=s<=200: segments.append((s*math.sin(math.radians(az)),s*math.cos(math.radians(az)),hours))
+        if segments:
+            east=sum(x*z for x,y,z in segments)/sum(z for x,y,z in segments)
+            north=sum(y*z for x,y,z in segments)/sum(z for x,y,z in segments)
+            speed=math.hypot(east,north)
+            bearing=math.degrees(math.atan2(east,north))%360
         tracks.append((v,t,lon,lat,speed,bearing))
     except (KeyError,ValueError,TypeError): continue
 def disk(track,h):
@@ -83,6 +96,6 @@ for h,w in weights.items():
         score=(nw*numeric+cw*int(endpoint.covers(p)))/total
         if score>=.2: groups["A" if score>=.75 else "B" if score>=.45 else "C"].append(cell)
     features=[feature(transform(back,g),{"class":c,"experimental":True}) for c,gs in groups.items() for g in polys(union(gs))]
-    metadata=dict(meta,lab_variant="B_v2_stage2",probability_calibrated=False,requested_weights=list(w),effective_weights={"motion":cw/total,"models":nw/total,"sinottica":0,"orography":0},model_weights={n:mw[n]/sum(mw[k] for k in models) for n in models},motion_endpoint_available=not endpoint.is_empty,motion_context_decay=decay,motion_context_max_hours=4,motion_context_validity_gap_hours=max(0,min(ages,default=6)-4) if h==4 else None,radar_added_polygons=0,limitations=["Upstream validated tracking; no new TITAN association","Model support domain only","Synoptic and orographic scores not implemented","Ordinal class thresholds provisional","Four-hour endpoint used as decaying context for validity up to six hours; not a position forecast beyond four hours"])
+    metadata=dict(meta,lab_variant="B_v2_stage3",probability_calibrated=False,requested_weights=list(w),effective_weights={"motion":cw/total,"models":nw/total,"sinottica":0,"orography":0},model_weights={n:mw[n]/sum(mw[k] for k in models) for n in models},motion_endpoint_available=not endpoint.is_empty,motion_context_decay=decay,motion_context_max_hours=4,motion_context_validity_gap_hours=max(0,min(ages,default=6)-4) if h==4 else None,radar_added_polygons=0,limitations=["Upstream association; independent pairwise motion reconstruction; no split/merge detection","Model support domain only","Synoptic and orographic scores not implemented","Ordinal class thresholds provisional","Four-hour endpoint used as decaying context for validity up to six hours; not a position forecast beyond four hours"])
     product={"type":"FeatureCollection","features":features,"metadata":metadata,"cones":{"type":"FeatureCollection","features":cones if h==4 else []}}
     (out/f"{h}h.geojson").write_text(json.dumps(product,separators=(",",":"),allow_nan=False))
