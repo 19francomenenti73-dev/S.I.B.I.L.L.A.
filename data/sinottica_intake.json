@@ -5,7 +5,7 @@
   "forecast_engine_connected": false,
   "source": "NOAA/NCEP GFS 0.25°",
   "source_url": "https://19francomenenti73-dev.github.io/Dashboard-Enterprise/data/sinottica.json",
-  "acquired_utc": "2026-11-28T13:00:48.955699+00:00",
+  "acquired_utc": "2026-11-28T13:30:46.077446+00:00",
   "model_generated_utc": "2026-11-28T10:20:42.151946+00:00",
   "frames": [
     {
