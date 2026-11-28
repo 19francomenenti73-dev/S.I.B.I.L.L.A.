@@ -5,7 +5,7 @@
   "forecast_engine_connected": false,
   "source": "NOAA/NCEP GFS 0.25°",
   "source_url": "https://19francomenenti73-dev.github.io/Dashboard-Enterprise/data/sinottica.json",
-  "acquired_utc": "2026-11-28T16:00:44.386234+00:00",
+  "acquired_utc": "2026-11-28T16:30:43.047429+00:00",
   "model_generated_utc": "2026-11-28T10:20:42.151946+00:00",
   "frames": [
     {
@@ -322091,8 +322091,25 @@
   ],
   "frame_count": 16,
   "satellite": {
-    "status": "unavailable",
-    "reason": "Satellite status expired",
+    "status": "metadata_only",
+    "checked_utc": "2026-11-28T16:22:38.505706+00:00",
+    "source": "https://view.eumetsat.int/geoserver/wms",
+    "products": {
+      "rgb": {
+        "layer": "mtg_fd:rgb_geocolour",
+        "state": "green",
+        "latest_utc": "2026-11-28T15:50:00+00:00",
+        "age_minutes": 33,
+        "reason": "Latest advertised imagery within 60 min"
+      },
+      "water_vapour": {
+        "layer": "msg_fes:rgb_airmass",
+        "state": "green",
+        "latest_utc": "2026-11-28T15:45:00+00:00",
+        "age_minutes": 38,
+        "reason": "Latest advertised imagery within 60 min"
+      }
+    },
     "imagery_ingested": false
   },
   "radar": {
