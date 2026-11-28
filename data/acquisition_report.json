@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-11-28T21:31:26.704019+00:00",
+  "generated_at": "2026-11-28T21:41:10.191757+00:00",
   "sinottica": "success",
   "gfs": "success",
   "ecmwf": "success",
-  "icon": "success",
-  "icon_scheduled": true,
+  "icon": "skipped",
+  "icon_scheduled": false,
   "iride": "success",
   "argo": "success",
   "fusion": "success",
